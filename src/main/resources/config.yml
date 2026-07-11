@@ -1,0 +1,87 @@
+# PillageCore 설정 파일
+
+database:
+  file: pillage.db
+
+team:
+  default-max-members: 6
+  max-members-hard-cap: 12
+  friendly-fire-default: false
+
+tp:
+  countdown-seconds: 5
+  cooldown-seconds: 30
+  request-timeout-seconds: 60
+  cancel-on-move: true
+  cancel-on-move-threshold: 0.3
+
+combat:
+  tag-duration-seconds: 30
+  logout-penalty: true
+
+raid:
+  # 신규 팀 보호 시간(시간 단위). 3 또는 24 중 선택
+  new-team-protection-hours: 24
+  raid-duration-minutes: 15
+  logout-penalty: true
+  block-tp-during-raid: true
+  alert-message: "&c&l⚠ 여러분의 기지가 공격받고 있습니다! &f(&e%attacker%&f)"
+  # 레이드 창 동안 공격 측이 이 이상 킬을 하면 '약탈 성공', 아니면 '방어 성공'으로 기록됩니다.
+  win-kill-threshold: 3
+
+pvp:
+  death-chest-seconds: 30
+
+spawn:
+  world: world
+  x: 0.5
+  y: 100.0
+  z: 0.5
+  yaw: 0.0
+  pitch: 0.0
+
+# 매우 널널한 안티치트: 기본은 pillage.admin 권한 보유자에게 채팅 경고만 보냅니다.
+# punish.enabled 를 true 로 바꾸기 전에는 자동 제재가 전혀 일어나지 않습니다.
+anticheat:
+  alert-violations: 10
+  violation-decay-seconds: 30
+  punish:
+    enabled: false
+    kick-violations: 40
+  killaura:
+    enabled: true
+    max-angle-degrees: 65
+  reach:
+    enabled: true
+    max-distance: 4.2
+  speed:
+    enabled: true
+    tolerance-multiplier: 1.7
+  fly:
+    enabled: true
+    grace-seconds: 5
+  autoclick:
+    enabled: true
+    max-cps: 20
+  scaffold:
+    enabled: true
+    max-angle-degrees: 75
+  fastbreak:
+    enabled: true
+    min-millis-for-hard-blocks: 90
+    min-hardness: 0.6
+
+reward:
+  daily-amount: 50
+  playtime-milestone-hours: 1
+  playtime-amount: 20
+  event-box-min-reward: 10
+  event-box-max-reward: 100
+
+chat:
+  cooldown-seconds: 2
+  profanity-filter-enabled: false
+  banned-words:
+    - "시발"
+    - "씨발"
+    - "병신"

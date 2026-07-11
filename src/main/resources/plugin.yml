@@ -1,0 +1,138 @@
+name: PillageCore
+version: '${version}'
+main: com.mingyu.pillage.PillageCore
+api-version: '26.1'
+author: Mingyu
+description: Team / TP / Trade / Raid / Combat core systems for a pillage-PvP server
+
+commands:
+  team:
+    description: 팀 관리 명령어
+    usage: /team <create|invite|join|leave|kick|disband|chat|ff|sethome|home|setmax|list|info|top> [args]
+    aliases: [t, 팀]
+  tc:
+    description: 팀 채팅으로 메시지 전송
+    usage: /tc <메시지>
+  tpa:
+    description: 다른 플레이어에게 텔레포트 요청
+    usage: /tpa <player>
+  tpaccept:
+    description: 텔레포트 요청 수락
+    usage: /tpaccept
+    aliases: [tpyes]
+  tpdeny:
+    description: 텔레포트 요청 거절
+    usage: /tpdeny
+    aliases: [tpno]
+  back:
+    description: 마지막 위치로 텔레포트
+    usage: /back
+  spawn:
+    description: 스폰으로 이동
+    usage: /spawn
+  home:
+    description: 홈으로 이동
+    usage: /home [이름]
+  sethome:
+    description: 홈 설정
+    usage: /sethome [이름]
+  delhome:
+    description: 홈 삭제
+    usage: /delhome [이름]
+  trade:
+    description: 다른 플레이어에게 거래 요청
+    usage: /trade <player>
+  tradeaccept:
+    description: 거래 요청 수락
+    usage: /tradeaccept
+  tradedeny:
+    description: 거래 요청 거절
+    usage: /tradedeny
+  menu:
+    description: PillageCore GUI 메뉴 열기
+    usage: /menu
+    aliases: [메뉴, pillage]
+  pillagehelp:
+    description: PillageCore 명령어 도움말 보기
+    usage: /pillagehelp [페이지]
+    aliases: [phelp, 도움말]
+  stats:
+    description: 개인 통계 보기
+    usage: /stats [player]
+  death:
+    description: 마지막 사망 위치로 이동
+    usage: /death
+  coords:
+    description: 현재 좌표 공유
+    usage: /coords
+  ping:
+    description: 핑 확인
+    usage: /ping [player]
+  tps:
+    description: 서버 TPS 확인
+    usage: /tps
+  clock:
+    description: 액션바 시계 토글
+    usage: /clock
+  dailyreward:
+    description: 일일 보상 수령
+    usage: /dailyreward
+    aliases: [일일보상]
+  balance:
+    description: 잔액 확인
+    usage: /balance [player]
+    aliases: [bal, 잔액]
+  pay:
+    description: 다른 플레이어에게 송금
+    usage: /pay <player> <금액>
+  deposit:
+    description: 에메랄드를 잔액으로 입금
+    usage: /deposit [수량]
+  withdraw:
+    description: 잔액을 에메랄드로 출금
+    usage: /withdraw <수량>
+  msg:
+    description: 귓속말 보내기
+    usage: /msg <player> <메시지>
+    aliases: [tell, w, 귓말]
+  r:
+    description: 마지막 귓속말 상대에게 답장
+    usage: /r <메시지>
+    aliases: [reply]
+  report:
+    description: 플레이어 신고
+    usage: /report <player> <사유>
+  staff:
+    description: 관리자 모드(투명화) 토글
+    usage: /staff
+    permission: pillage.admin
+  inspect:
+    description: 다른 플레이어의 인벤토리 검사 (읽기 전용)
+    usage: /inspect <player>
+    permission: pillage.admin
+  logs:
+    description: 거래/킬/밴/TP 로그 조회
+    usage: /logs <trade|kill|ban|tp> [개수]
+    permission: pillage.admin
+  pillageban:
+    description: 플레이어 차단
+    usage: /pillageban <player> [사유]
+    permission: pillage.admin
+  eventbox:
+    description: 이벤트 상자 지급
+    usage: /eventbox give <player> [수량]
+    permission: pillage.admin
+
+permissions:
+  pillage.team.*:
+    description: 팀 명령어 전체 권한
+    default: true
+  pillage.tp.*:
+    description: TP 명령어 전체 권한
+    default: true
+  pillage.trade.*:
+    description: 거래 명령어 전체 권한
+    default: true
+  pillage.admin:
+    description: 관리자 권한 (팀 최대인원 제한 없이 설정, 안티치트 경고 수신, 관리자 명령어 등)
+    default: op

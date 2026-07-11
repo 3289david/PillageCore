@@ -1,0 +1,72 @@
+package com.mingyu.pillage.raid;
+
+import com.mingyu.pillage.team.Team;
+import com.mingyu.pillage.team.TeamManager;
+import com.mingyu.pillage.util.Msg;
+import org.bukkit.entity.Player;
+import org.bukkit.entity.Projectile;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
+import org.bukkit.event.Listener;
+import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
+
+public final class RaidListener implements Listener {
+
+    private final RaidManager raidManager;
+    private final TeamManager teamManager;
+
+    public RaidListener(RaidManager raidManager, TeamManager teamManager) {
+        this.raidManager = raidManager;
+        this.teamManager = teamManager;
+    }
+
+    @EventHandler(priority = EventPriority.LOW)
+    public void onProtectionCheck(EntityDamageByEntityEvent event) {
+        if (!(event.getEntity() instanceof Player victim)) return;
+        Player attacker = resolveAttacker(event);
+        if (attacker == null || attacker.equals(victim)) return;
+
+        Team victimTeam = teamManager.getTeam(victim.getUniqueId());
+        if (victimTeam == null) return;
+        if (teamManager.isSameTeam(attacker.getUniqueId(), victim.getUniqueId())) return;
+
+        if (victimTeam.isProtected()) {
+            event.setCancelled(true);
+            attacker.sendMessage(Msg.of("&c해당 팀은 아직 레이드 보호를 받고 있습니다."));
+        }
+    }
+
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onRaidTrigger(EntityDamageByEntityEvent event) {
+        if (!(event.getEntity() instanceof Player victim)) return;
+        Player attacker = resolveAttacker(event);
+        if (attacker == null || attacker.equals(victim)) return;
+
+        Team victimTeam = teamManager.getTeam(victim.getUniqueId());
+        if (victimTeam == null) return;
+        if (teamManager.isSameTeam(attacker.getUniqueId(), victim.getUniqueId())) return;
+
+        raidManager.startOrExtendRaid(victimTeam, attacker);
+    }
+
+    @EventHandler
+    public void onQuit(PlayerQuitEvent event) {
+        Player player = event.getPlayer();
+        Team team = teamManager.getTeam(player.getUniqueId());
+        if (team != null && raidManager.logoutPenaltyEnabled() && raidManager.isTeamInRaid(team.id())) {
+            player.setHealth(0.0);
+        }
+    }
+
+    private Player resolveAttacker(EntityDamageByEntityEvent event) {
+        if (event.getDamager() instanceof Player player) {
+            return player;
+        }
+        if (event.getDamager() instanceof Projectile projectile
+                && projectile.getShooter() instanceof Player player) {
+            return player;
+        }
+        return null;
+    }
+}
