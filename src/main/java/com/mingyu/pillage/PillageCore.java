@@ -161,8 +161,7 @@ public final class PillageCore extends JavaPlugin {
                 getConfig().getInt("anticheat.punish.kick-violations", 40));
 
         KillStreakManager killStreakManager = new KillStreakManager();
-        DeathChestManager deathChestManager = new DeathChestManager(
-                this, teamManager, getConfig().getInt("pvp.death-chest-seconds", 30));
+        DeathChestManager deathChestManager = new DeathChestManager();
 
         playtimeTracker = new PlaytimeTracker(this, statsDao);
         playtimeTracker.start();

@@ -29,13 +29,10 @@ raid:
   # 레이드 창 동안 공격 측이 이 이상 킬을 하면 '약탈 성공', 아니면 '방어 성공'으로 기록됩니다.
   win-kill-threshold: 3
 
-pvp:
-  death-chest-seconds: 30
-
 spawn:
   world: world
   x: 0.5
-  y: 100.0
+  # y is no longer configurable - it snaps to the highest ground block at (x, z).
   z: 0.5
   yaw: 0.0
   pitch: 0.0

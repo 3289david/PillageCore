@@ -20,10 +20,14 @@ public final class SpawnService {
         if (world == null) {
             world = Bukkit.getWorlds().get(0);
         }
+        double x = config.getDouble("spawn.x");
+        double z = config.getDouble("spawn.z");
+        // Snap to the highest solid block so players land on the ground instead of floating in the sky.
+        int groundY = world.getHighestBlockYAt((int) Math.floor(x), (int) Math.floor(z));
         return new Location(world,
-                config.getDouble("spawn.x"),
-                config.getDouble("spawn.y"),
-                config.getDouble("spawn.z"),
+                x,
+                groundY + 1,
+                z,
                 (float) config.getDouble("spawn.yaw"),
                 (float) config.getDouble("spawn.pitch"));
     }
