@@ -17,8 +17,6 @@ import com.mingyu.pillage.chat.ChatManager;
 import com.mingyu.pillage.chat.GlobalChatListener;
 import com.mingyu.pillage.chat.MsgCommand;
 import com.mingyu.pillage.chat.ReplyCommand;
-import com.mingyu.pillage.combat.CombatListener;
-import com.mingyu.pillage.combat.CombatManager;
 import com.mingyu.pillage.data.Database;
 import com.mingyu.pillage.data.dao.BanLogDao;
 import com.mingyu.pillage.data.dao.DeathLocationDao;
@@ -31,6 +29,7 @@ import com.mingyu.pillage.data.dao.RewardDao;
 import com.mingyu.pillage.data.dao.StatsDao;
 import com.mingyu.pillage.data.dao.TeamDao;
 import com.mingyu.pillage.data.dao.TpLogDao;
+import com.mingyu.pillage.data.dao.ShopDao;
 import com.mingyu.pillage.data.dao.TradeLogDao;
 import com.mingyu.pillage.economy.BalanceCommand;
 import com.mingyu.pillage.economy.DepositCommand;
@@ -57,6 +56,8 @@ import com.mingyu.pillage.reward.EventBoxCommand;
 import com.mingyu.pillage.reward.EventBoxListener;
 import com.mingyu.pillage.reward.EventBoxManager;
 import com.mingyu.pillage.reward.RewardManager;
+import com.mingyu.pillage.shop.ShopCommand;
+import com.mingyu.pillage.shop.ShopManager;
 import com.mingyu.pillage.stats.MiningTracker;
 import com.mingyu.pillage.stats.PlaytimeTracker;
 import com.mingyu.pillage.stats.StatsCommand;
@@ -91,7 +92,6 @@ public final class PillageCore extends JavaPlugin {
     private Database database;
     private TeamManager teamManager;
     private TpManager tpManager;
-    private CombatManager combatManager;
     private RaidManager raidManager;
     private TradeManager tradeManager;
     private AnticheatManager anticheatManager;
@@ -117,6 +117,7 @@ public final class PillageCore extends JavaPlugin {
         DeathLocationDao deathLocationDao = new DeathLocationDao(database);
         RewardDao rewardDao = new RewardDao(database);
         EconomyDao economyDao = new EconomyDao(database);
+        ShopDao shopDao = new ShopDao(database);
 
         teamManager = new TeamManager(
                 teamDao,
@@ -133,20 +134,11 @@ public final class PillageCore extends JavaPlugin {
                 getConfig().getBoolean("tp.cancel-on-move", true),
                 getConfig().getDouble("tp.cancel-on-move-threshold", 0.3));
 
-        combatManager = new CombatManager(
-                getConfig().getInt("combat.tag-duration-seconds", 30),
-                getConfig().getBoolean("combat.logout-penalty", true));
-
         raidManager = new RaidManager(
                 this, teamManager,
                 getConfig().getInt("raid.raid-duration-minutes", 15),
-                getConfig().getBoolean("raid.logout-penalty", true),
-                getConfig().getBoolean("raid.block-tp-during-raid", true),
                 getConfig().getString("raid.alert-message", "&c기지가 공격받고 있습니다! (%attacker%)"),
                 getConfig().getInt("raid.win-kill-threshold", 3));
-
-        tpManager.registerGuard(combatManager);
-        tpManager.registerGuard(raidManager);
 
         tradeManager = new TradeManager(tradeLogDao);
 
@@ -164,6 +156,9 @@ public final class PillageCore extends JavaPlugin {
 
         playtimeTracker = new PlaytimeTracker(this, statsDao);
         playtimeTracker.start();
+
+        ShopManager shopManager = new ShopManager(shopDao);
+        shopManager.loadAll();
 
         EconomyManager economyManager = new EconomyManager(economyDao);
         RewardManager rewardManager = new RewardManager(
@@ -188,7 +183,8 @@ public final class PillageCore extends JavaPlugin {
         menuService = new MenuService(teamManager, tpManager, tradeManager, spawnService, teamChatService, statsDao);
 
         registerCommands(teamChatService, spawnService, killLogDao, reportLogDao, banLogDao, tpLogDao, tradeLogDao,
-                statsDao, deathLocationDao, staffModeManager, economyManager, rewardManager, eventBoxManager, chatManager);
+                statsDao, deathLocationDao, staffModeManager, economyManager, rewardManager, eventBoxManager,
+                chatManager, shopManager);
         registerListeners(teamChatService, killLogDao, statsDao, deathLocationDao, killStreakManager,
                 deathChestManager, staffModeManager, eventBoxManager, chatManager);
 
@@ -200,7 +196,8 @@ public final class PillageCore extends JavaPlugin {
                                    TpLogDao tpLogDao, TradeLogDao tradeLogDao, StatsDao statsDao,
                                    DeathLocationDao deathLocationDao, StaffModeManager staffModeManager,
                                    EconomyManager economyManager, RewardManager rewardManager,
-                                   EventBoxManager eventBoxManager, ChatManager chatManager) {
+                                   EventBoxManager eventBoxManager, ChatManager chatManager,
+                                   ShopManager shopManager) {
         getCommand("team").setExecutor(new TeamCommand(teamManager, tpManager));
         getCommand("team").setTabCompleter((TeamCommand) getCommand("team").getExecutor());
         getCommand("tc").setExecutor(new TeamChatCommand(teamManager, teamChatService));
@@ -241,6 +238,7 @@ public final class PillageCore extends JavaPlugin {
         getCommand("deposit").setExecutor(new DepositCommand(economyManager));
         getCommand("withdraw").setExecutor(new WithdrawCommand(economyManager));
         getCommand("eventbox").setExecutor(new EventBoxCommand(eventBoxManager));
+        getCommand("shop").setExecutor(new ShopCommand(shopManager));
 
         getCommand("msg").setExecutor(new MsgCommand(chatManager));
         getCommand("r").setExecutor(new ReplyCommand(chatManager));
@@ -259,7 +257,6 @@ public final class PillageCore extends JavaPlugin {
         var pm = getServer().getPluginManager();
         pm.registerEvents(new FriendlyFireListener(teamManager), this);
         pm.registerEvents(new TeamChatListener(teamManager, teamChatService), this);
-        pm.registerEvents(new CombatListener(combatManager), this);
         pm.registerEvents(new RaidListener(raidManager, teamManager), this);
         pm.registerEvents(new TpMoveListener(tpManager), this);
         pm.registerEvents(new TradeListener(tradeManager), this);

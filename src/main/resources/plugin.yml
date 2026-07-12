@@ -122,6 +122,9 @@ commands:
     description: 이벤트 상자 지급
     usage: /eventbox give <player> [수량]
     permission: pillage.admin
+  shop:
+    description: 상점 GUI 열기 (관리자는 add/remove/list로 항목 관리)
+    usage: /shop [add|remove|list] [args]
 
 permissions:
   pillage.team.*:

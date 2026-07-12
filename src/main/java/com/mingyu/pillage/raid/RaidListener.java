@@ -8,7 +8,6 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
-import org.bukkit.event.player.PlayerQuitEvent;
 
 public final class RaidListener implements Listener {
 
@@ -31,15 +30,6 @@ public final class RaidListener implements Listener {
         if (teamManager.isSameTeam(attacker.getUniqueId(), victim.getUniqueId())) return;
 
         raidManager.startOrExtendRaid(victimTeam, attacker);
-    }
-
-    @EventHandler
-    public void onQuit(PlayerQuitEvent event) {
-        Player player = event.getPlayer();
-        Team team = teamManager.getTeam(player.getUniqueId());
-        if (team != null && raidManager.logoutPenaltyEnabled() && raidManager.isTeamInRaid(team.id())) {
-            player.setHealth(0.0);
-        }
     }
 
     private Player resolveAttacker(EntityDamageByEntityEvent event) {

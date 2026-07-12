@@ -8,9 +8,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitTask;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -19,7 +17,6 @@ public final class TpManager {
     private final JavaPlugin plugin;
     private final HomeDao homeDao;
     private final LastLocationDao lastLocationDao;
-    private final List<TeleportGuard> guards = new ArrayList<>();
 
     private final int countdownSeconds;
     private final int cooldownSeconds;
@@ -44,10 +41,6 @@ public final class TpManager {
         this.cancelOnMoveThreshold = cancelOnMoveThreshold;
     }
 
-    public void registerGuard(TeleportGuard guard) {
-        guards.add(guard);
-    }
-
     private record PendingTeleport(Location startLocation, Location destination, BukkitTask task) {
     }
 
@@ -56,14 +49,6 @@ public final class TpManager {
     }
 
     public void requestTeleport(Player player, Location destination) {
-        for (TeleportGuard guard : guards) {
-            String reason = guard.blockReason(player);
-            if (reason != null) {
-                player.sendMessage(Msg.of(reason));
-                return;
-            }
-        }
-
         Long cooldownUntil = cooldowns.get(player.getUniqueId());
         if (cooldownUntil != null && cooldownUntil > System.currentTimeMillis() && !player.hasPermission("pillage.admin")) {
             long remaining = (cooldownUntil - System.currentTimeMillis()) / 1000 + 1;

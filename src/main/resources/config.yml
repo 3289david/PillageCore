@@ -67,6 +67,7 @@ anticheat:
     min-hardness: 0.6
 
 reward:
+  # /dailyreward 로 지급되는 스테이크(COOKED_BEEF) 개수
   daily-amount: 50
   playtime-milestone-hours: 1
   playtime-amount: 20

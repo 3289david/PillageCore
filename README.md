@@ -1,6 +1,6 @@
 # PillageCore
 
-팀 기반 약탈(Raid) PvP 서버를 위한 올인원 Paper 플러그인입니다. 팀, 텔레포트, 물물교환, 레이드, 전투 태그, PvP 부가기능, 개인 통계, 서버 관리, QoL, 보상, 에메랄드 경제, 채팅 확장, GUI 메뉴, 널널한 안티치트까지 전부 포함되어 있습니다.
+팀 기반 약탈(Raid) PvP 서버를 위한 올인원 Paper 플러그인입니다. 팀, 텔레포트, 물물교환, 레이드, PvP 부가기능, 개인 통계, 서버 관리, QoL, 보상, 에메랄드 경제, 아이템 교환 상점, 채팅 확장, GUI 메뉴, 널널한 안티치트까지 전부 포함되어 있습니다. 전투/레이드 중이라는 이유로 텔레포트를 막거나 로그아웃 시 처형하는 기능은 없습니다 — 텔레포트는 언제나 가능합니다.
 
 - **대상 서버**: Paper `26.1.2` (stable dev-bundle) — 실제 호스팅사(FeatherMC 등)에서 돌아가는 최신 안정 버전 기준입니다.
 - **Java**: 25 (툴체인)
@@ -65,7 +65,7 @@
 | `/home [이름]` / `/sethome [이름]` / `/delhome [이름]` | 개인 홈 |
 | `/death` | 마지막 사망 위치로 이동 |
 
-모든 텔레포트는 5초 카운트다운 + 이동 시 취소 + 쿨타임이 적용되며, 전투 중이거나 소속 팀이 레이드당하는 중에는 사용할 수 없습니다.
+모든 텔레포트는 5초 카운트다운 + 이동 시 취소 + 쿨타임이 적용되며, 전투 중이거나 소속 팀이 레이드당하는 중이라도 언제나 사용할 수 있습니다.
 
 ### 거래
 
@@ -96,10 +96,13 @@
 | `/pay <player> <금액>` | 송금 |
 | `/deposit [수량]` | 인벤토리의 에메랄드를 잔액으로 입금 |
 | `/withdraw <수량>` | 잔액을 에메랄드 아이템으로 출금 |
-| `/dailyreward` (별칭 `/일일보상`) | 24시간마다 1회 수령 |
+| `/dailyreward` (별칭 `/일일보상`) | 24시간마다 1회, 스테이크(COOKED_BEEF) 수령 |
 | `/eventbox give <player> [수량]` (관리자) | 이벤트 상자 지급, 우클릭하면 랜덤 보상 |
+| `/shop` | 아이템 교환 상점 GUI 열기 |
+| `/shop add <내는아이템> <내는수량> <받는아이템> <받는수량>` (관리자) | 상점 항목 등록 |
+| `/shop remove <id>` / `/shop list` (관리자) | 상점 항목 삭제 / 조회 |
 
-플레이타임이 설정된 시간(기본 1시간) 단위로 쌓일 때마다 자동으로 보상이 지급됩니다.
+플레이타임이 설정된 시간(기본 1시간) 단위로 쌓일 때마다 자동으로 에메랄드 보상이 지급됩니다. 상점은 관리자가 등록한 "아이템 A n개 -> 아이템 B m개" 교환 목록을 GUI로 보여주며, 플레이어가 클릭하면 즉시 자동으로 교환됩니다(재료가 부족하면 실패).
 
 ### 채팅
 
@@ -120,8 +123,7 @@
 
 ## 자동 시스템 (명령어 없음)
 
-- **레이드 타이머**: 신규 팀 보호 없이 언제든 팀이 공격받으면 팀 전체에 경고 메시지가 뜨고, 15분간 텔레포트가 막히며 그 사이 로그아웃하면 처형됩니다. 레이드 종료 시 공격 측 킬 수가 `raid.win-kill-threshold`(기본 3) 이상이면 공격 팀 "약탈 성공"(+약탈 점수), 아니면 수비 팀 "레이드 방어"로 기록됩니다.
-- **전투 태그**: PvP로 피격되면 30초간 전투 상태가 되어 텔레포트가 막히고, 로그아웃하면 처형됩니다.
+- **레이드 타이머**: 신규 팀 보호 없이 언제든 팀이 공격받으면 팀 전체에 경고 메시지가 뜹니다(텔레포트 제한이나 로그아웃 처형은 없음). 레이드 종료 시 공격 측 킬 수가 `raid.win-kill-threshold`(기본 3) 이상이면 공격 팀 "약탈 성공"(+약탈 점수), 아니면 수비 팀 "레이드 방어"로 기록됩니다.
 - **킬 로그 / 킬 스트릭 / 사망 상자**: 모든 PvP 킬이 킬 피드로 브로드캐스트되고 DB에 기록됩니다. 5/10/20 연킬은 전체 공지됩니다. 사망 시 드롭 아이템은 바닥에 흩어지는 대신 사망 지점에 상자로 영구히 보관되며(자동으로 사라지지 않음), 팀 소속 여부와 상관없이 누구나 열어서 약탈할 수 있습니다. 상자는 부술 수 있으며(부수면 일반 상자처럼 내용물이 바닥에 드롭됩니다), 아이템이 상자 한 칸(27슬롯)을 넘으면 바로 옆에 상자를 추가로 생성해 전부 담습니다 — 어떤 경우에도 아이템이 소실되지 않습니다.
 - **안티치트 (매우 널널)**: KillAura / Reach / Speed / Fly / AutoClick / Scaffold / FastBreak 7종. 판정 임계값을 넉넉하게 잡았고, 여러 번(기본 10회) 반복되어야 `pillage.admin` 권한자에게 채팅 경고만 보냅니다. 자동 제재(킥)는 `config.yml`의 `anticheat.punish.enabled`를 켜야만 동작하며 기본은 꺼져 있습니다.
 
@@ -132,11 +134,11 @@
 | `pillage.team.*` | true | 팀 명령어 |
 | `pillage.tp.*` | true | TP 명령어 |
 | `pillage.trade.*` | true | 거래 명령어 |
-| `pillage.admin` | op | 안티치트 경고 수신, 관리자 명령어(`/staff`, `/inspect`, `/logs`, `/pillageban`, `/eventbox`), 인원수 제한 우회 등 |
+| `pillage.admin` | op | 안티치트 경고 수신, 관리자 명령어(`/staff`, `/inspect`, `/logs`, `/pillageban`, `/eventbox`, `/shop add\|remove\|list`), 인원수 제한 우회 등 |
 
 ## 주요 설정 (config.yml)
 
-`database`, `team`, `tp`, `combat`, `raid`, `spawn`, `anticheat`, `reward`, `chat` 섹션으로 나뉘어 있으며 각 값에 한글 주석이 달려 있습니다. 특히:
+`database`, `team`, `tp`, `raid`, `spawn`, `anticheat`, `reward`, `chat` 섹션으로 나뉘어 있으며 각 값에 한글 주석이 달려 있습니다. 특히:
 
 - `raid.win-kill-threshold`: 레이드 중 이 킬 수 이상이면 공격 측 승리로 기록
 - `anticheat.punish.enabled`: 기본 `false` (경고만). 자동 킥을 원하면 `true`로 변경
@@ -145,7 +147,7 @@
 
 ## 데이터베이스 (SQLite)
 
-`teams`, `team_members`, `homes`, `last_locations`, `trade_log`, `kill_log`, `report_log`, `ban_log`, `tp_log`, `player_stats`, `death_locations`, `daily_rewards`, `playtime_rewards`, `economy` 테이블로 구성됩니다. 전부 `plugins/PillageCore/pillage.db` 한 파일에 저장됩니다.
+`teams`, `team_members`, `homes`, `last_locations`, `trade_log`, `kill_log`, `report_log`, `ban_log`, `tp_log`, `player_stats`, `death_locations`, `daily_rewards`, `playtime_rewards`, `economy`, `shop_offers` 테이블로 구성됩니다. 전부 `plugins/PillageCore/pillage.db` 한 파일에 저장됩니다.
 
 ## 구현 현황
 

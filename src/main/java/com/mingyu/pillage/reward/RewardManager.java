@@ -5,7 +5,9 @@ import com.mingyu.pillage.data.dao.StatsDao;
 import com.mingyu.pillage.economy.EconomyManager;
 import com.mingyu.pillage.stats.PlaytimeTracker;
 import com.mingyu.pillage.util.Msg;
+import org.bukkit.Material;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.concurrent.TimeUnit;
@@ -49,8 +51,8 @@ public final class RewardManager {
             return ClaimResult.ALREADY_CLAIMED;
         }
         rewardDao.setLastDailyClaim(player.getUniqueId(), now);
-        economyManager.deposit(player.getUniqueId(), dailyRewardAmount);
-        player.sendMessage(Msg.of("&a일일 보상으로 &e" + dailyRewardAmount + " 에메랄드&a를 받았습니다!"));
+        player.getInventory().addItem(new ItemStack(Material.COOKED_BEEF, (int) dailyRewardAmount));
+        player.sendMessage(Msg.of("&a일일 보상으로 &e스테이크 " + dailyRewardAmount + "개&a를 받았습니다!"));
         return ClaimResult.OK;
     }
 

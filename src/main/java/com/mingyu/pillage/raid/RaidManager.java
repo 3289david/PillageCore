@@ -2,7 +2,6 @@ package com.mingyu.pillage.raid;
 
 import com.mingyu.pillage.team.Team;
 import com.mingyu.pillage.team.TeamManager;
-import com.mingyu.pillage.tp.TeleportGuard;
 import com.mingyu.pillage.util.Msg;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
@@ -13,13 +12,11 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
-public final class RaidManager implements TeleportGuard {
+public final class RaidManager {
 
     private final JavaPlugin plugin;
     private final TeamManager teamManager;
     private final long raidDurationMillis;
-    private final boolean logoutPenalty;
-    private final boolean blockTpDuringRaid;
     private final String alertMessageTemplate;
     private final int winKillThreshold;
 
@@ -28,13 +25,11 @@ public final class RaidManager implements TeleportGuard {
     private final Map<Integer, Integer> attackerTeamId = new HashMap<>();
     private final Map<Integer, Integer> raidKillCount = new HashMap<>();
 
-    public RaidManager(JavaPlugin plugin, TeamManager teamManager, int raidDurationMinutes, boolean logoutPenalty,
-                        boolean blockTpDuringRaid, String alertMessageTemplate, int winKillThreshold) {
+    public RaidManager(JavaPlugin plugin, TeamManager teamManager, int raidDurationMinutes,
+                        String alertMessageTemplate, int winKillThreshold) {
         this.plugin = plugin;
         this.teamManager = teamManager;
         this.raidDurationMillis = TimeUnit.MINUTES.toMillis(raidDurationMinutes);
-        this.logoutPenalty = logoutPenalty;
-        this.blockTpDuringRaid = blockTpDuringRaid;
         this.alertMessageTemplate = alertMessageTemplate;
         this.winKillThreshold = winKillThreshold;
     }
@@ -135,21 +130,7 @@ public final class RaidManager implements TeleportGuard {
         return Math.max(0, (until - System.currentTimeMillis()) / 1000);
     }
 
-    public boolean logoutPenaltyEnabled() {
-        return logoutPenalty;
-    }
-
     public TeamManager teamManager() {
         return teamManager;
-    }
-
-    @Override
-    public String blockReason(Player player) {
-        if (!blockTpDuringRaid) return null;
-        Team team = teamManager.getTeam(player.getUniqueId());
-        if (team != null && isTeamInRaid(team.id())) {
-            return "&c소속 팀이 약탈당하는 중에는 텔레포트를 사용할 수 없습니다. (" + remainingSeconds(team.id()) + "초 남음)";
-        }
-        return null;
     }
 }

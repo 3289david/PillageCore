@@ -161,6 +161,15 @@ public final class Database {
                     balance INTEGER NOT NULL DEFAULT 0
                 );
             """);
+            st.execute("""
+                CREATE TABLE IF NOT EXISTS shop_offers (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    input_material TEXT NOT NULL,
+                    input_amount INTEGER NOT NULL,
+                    output_material TEXT NOT NULL,
+                    output_amount INTEGER NOT NULL
+                );
+            """);
         }
     }
 

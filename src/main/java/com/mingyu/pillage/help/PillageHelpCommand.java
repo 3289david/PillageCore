@@ -32,17 +32,16 @@ public final class PillageHelpCommand implements CommandExecutor {
                     "&6[텔레포트]",
                     "&e/tpa <player> &f, &e/tpaccept&f, &e/tpdeny",
                     "&e/spawn&f, &e/back&f, &e/home [이름]&f, &e/sethome [이름]&f, &e/delhome [이름]",
-                    "&7(전투 중·소속 팀 레이드 중에는 텔레포트가 제한됩니다)",
+                    "&7(전투/레이드 중에도 텔레포트가 항상 가능합니다)",
                     "",
                     "&6[거래]",
                     "&e/trade <player> &f- 거래 요청, &e/tradeaccept&f, &e/tradedeny",
                     "",
                     "&6[약탈/전투]",
-                    "&7- 신규 팀은 생성 후 설정된 시간(기본 24시간) 동안 공격받지 않습니다.",
-                    "&7- 보호가 끝난 팀이 공격받으면 팀 전체에 경고가 뜨고 15분간 텔레포트가 막힙니다.",
-                    "&7- 레이드 중 공격 측이 일정 킬 이상 달성하면 '약탈 성공', 아니면 팀이 '방어 성공'으로 기록됩니다.",
-                    "&7- PvP 피격 시 30초간 전투 상태가 되며, 전투/레이드 중 로그아웃하면 처형됩니다.",
-                    "&7- 죽으면 30초간 사망 상자가 생기며 팀원만 열 수 있습니다. 5/10/20 연킬은 전체 공지됩니다."
+                    "&7- 팀은 생성 직후부터 언제든 공격받을 수 있습니다.",
+                    "&7- 팀이 공격받으면 팀 전체에 경고가 뜨고, 레이드 중 공격 측이 일정 킬 이상 달성하면 '약탈 성공', 아니면 팀이 '방어 성공'으로 기록됩니다.",
+                    "&7- 죽으면 사망 지점에 상자가 영구히 생기며 누구나 열어서 약탈할 수 있습니다. 부술 수도 있고, 아이템이 넘치면 옆에 상자가 추가로 생깁니다.",
+                    "&7- 5/10/20 연킬은 전체 공지됩니다."
             ),
             List.of(
                     "&6[통계/QoL]",
@@ -54,8 +53,9 @@ public final class PillageHelpCommand implements CommandExecutor {
                     "&6[경제/보상]",
                     "&e/balance [player]&f, &e/pay <player> <금액>",
                     "&e/deposit [수량]&f - 에메랄드를 잔액으로, &e/withdraw <수량>&f - 잔액을 에메랄드로",
-                    "&e/dailyreward &f- 24시간마다 1회 수령 가능",
-                    "&7- 누적 플레이타임이 일정 시간을 넘길 때마다 자동으로 보상이 지급됩니다.",
+                    "&e/dailyreward &f- 24시간마다 1회, 스테이크 수령 가능",
+                    "&e/shop &f- 아이템 교환 상점 GUI 열기",
+                    "&7- 누적 플레이타임이 일정 시간을 넘길 때마다 자동으로 에메랄드 보상이 지급됩니다.",
                     "&7- 관리자가 지급하는 이벤트 상자를 우클릭하면 랜덤 보상을 받습니다."
             ),
             List.of(
@@ -70,6 +70,8 @@ public final class PillageHelpCommand implements CommandExecutor {
                     "&e/logs <trade|kill|ban|tp> [개수] &f- 최근 로그 조회",
                     "&e/pillageban <player> [사유] &f- 차단 + 로그 기록",
                     "&e/eventbox give <player> [수량] &f- 이벤트 상자 지급",
+                    "&e/shop add <내는아이템> <내는수량> <받는아이템> <받는수량> &f- 상점 항목 추가",
+                    "&e/shop remove <id> &f, &e/shop list &f- 상점 항목 삭제/조회",
                     "&e/anticheat &f설정은 config.yml 의 anticheat 섹션에서 조절 (기본: 경고만, 매우 널널)"
             )
     );
