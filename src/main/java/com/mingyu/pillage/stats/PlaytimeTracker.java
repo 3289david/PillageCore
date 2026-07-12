@@ -61,4 +61,11 @@ public final class PlaytimeTracker implements Listener {
             flush(player);
         }
     }
+
+    /** Seconds elapsed in the current session that haven't been saved to the database yet. */
+    public long liveSessionSeconds(UUID uuid) {
+        Long start = sessionStart.get(uuid);
+        if (start == null) return 0;
+        return (System.currentTimeMillis() - start) / 1000;
+    }
 }

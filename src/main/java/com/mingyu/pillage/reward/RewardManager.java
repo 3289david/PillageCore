@@ -3,6 +3,7 @@ package com.mingyu.pillage.reward;
 import com.mingyu.pillage.data.dao.RewardDao;
 import com.mingyu.pillage.data.dao.StatsDao;
 import com.mingyu.pillage.economy.EconomyManager;
+import com.mingyu.pillage.stats.PlaytimeTracker;
 import com.mingyu.pillage.util.Msg;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -14,15 +15,18 @@ public final class RewardManager {
     private final RewardDao rewardDao;
     private final StatsDao statsDao;
     private final EconomyManager economyManager;
+    private final PlaytimeTracker playtimeTracker;
     private final long dailyRewardAmount;
     private final int playtimeMilestoneHours;
     private final long playtimeRewardAmount;
 
     public RewardManager(RewardDao rewardDao, StatsDao statsDao, EconomyManager economyManager,
-                          long dailyRewardAmount, int playtimeMilestoneHours, long playtimeRewardAmount) {
+                          PlaytimeTracker playtimeTracker, long dailyRewardAmount,
+                          int playtimeMilestoneHours, long playtimeRewardAmount) {
         this.rewardDao = rewardDao;
         this.statsDao = statsDao;
         this.economyManager = economyManager;
+        this.playtimeTracker = playtimeTracker;
         this.dailyRewardAmount = dailyRewardAmount;
         this.playtimeMilestoneHours = playtimeMilestoneHours;
         this.playtimeRewardAmount = playtimeRewardAmount;
@@ -58,7 +62,9 @@ public final class RewardManager {
 
     private void checkPlaytimeMilestone(Player player) {
         if (playtimeMilestoneHours <= 0) return;
-        long totalHours = statsDao.get(player.getUniqueId()).playtimeSeconds() / 3600;
+        long savedSeconds = statsDao.get(player.getUniqueId()).playtimeSeconds();
+        long liveSeconds = playtimeTracker.liveSessionSeconds(player.getUniqueId());
+        long totalHours = (savedSeconds + liveSeconds) / 3600;
         int lastMilestone = rewardDao.lastPlaytimeMilestoneHours(player.getUniqueId());
         if (totalHours >= lastMilestone + playtimeMilestoneHours) {
             int newMilestone = lastMilestone + playtimeMilestoneHours;

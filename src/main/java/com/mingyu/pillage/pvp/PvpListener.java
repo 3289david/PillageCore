@@ -42,6 +42,9 @@ public final class PvpListener implements Listener {
 
     @EventHandler
     public void onDeath(PlayerDeathEvent event) {
+        // Force drops even if the keepInventory gamerule is on - the death chest is the whole point of the plugin.
+        event.setKeepInventory(false);
+
         Player victim = event.getEntity();
         Player killer = victim.getKiller();
 
