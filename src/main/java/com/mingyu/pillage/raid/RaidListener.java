@@ -2,7 +2,6 @@ package com.mingyu.pillage.raid;
 
 import com.mingyu.pillage.team.Team;
 import com.mingyu.pillage.team.TeamManager;
-import com.mingyu.pillage.util.Msg;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Projectile;
 import org.bukkit.event.EventHandler;
@@ -19,22 +18,6 @@ public final class RaidListener implements Listener {
     public RaidListener(RaidManager raidManager, TeamManager teamManager) {
         this.raidManager = raidManager;
         this.teamManager = teamManager;
-    }
-
-    @EventHandler(priority = EventPriority.LOW)
-    public void onProtectionCheck(EntityDamageByEntityEvent event) {
-        if (!(event.getEntity() instanceof Player victim)) return;
-        Player attacker = resolveAttacker(event);
-        if (attacker == null || attacker.equals(victim)) return;
-
-        Team victimTeam = teamManager.getTeam(victim.getUniqueId());
-        if (victimTeam == null) return;
-        if (teamManager.isSameTeam(attacker.getUniqueId(), victim.getUniqueId())) return;
-
-        if (victimTeam.isProtected()) {
-            event.setCancelled(true);
-            attacker.sendMessage(Msg.of("&c해당 팀은 아직 레이드 보호를 받고 있습니다."));
-        }
     }
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)

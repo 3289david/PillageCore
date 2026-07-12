@@ -51,7 +51,6 @@ public final class Database {
                     loot_score INTEGER NOT NULL DEFAULT 0,
                     raids_won INTEGER NOT NULL DEFAULT 0,
                     raids_defended INTEGER NOT NULL DEFAULT 0,
-                    protected_until INTEGER NOT NULL DEFAULT 0,
                     created_at INTEGER NOT NULL
                 );
             """);

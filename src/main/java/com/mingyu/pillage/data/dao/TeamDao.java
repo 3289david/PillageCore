@@ -98,10 +98,6 @@ public final class TeamDao {
         setColumn(teamId, "max_members", maxMembers);
     }
 
-    public void updateProtectedUntil(int teamId, long protectedUntil) {
-        setColumn(teamId, "protected_until", protectedUntil);
-    }
-
     public void addKill(int teamId) {
         incrementColumn(teamId, "kills");
     }
@@ -221,7 +217,6 @@ public final class TeamDao {
 
         Team team = new Team(id, name, leader, maxMembers, createdAt);
         team.setFriendlyFire(rs.getInt("friendly_fire") == 1);
-        team.setProtectedUntil(rs.getLong("protected_until"));
 
         for (int i = 0; i < rs.getInt("kills"); i++) team.addKill();
         team.addLootScore(rs.getInt("loot_score"));

@@ -18,7 +18,6 @@ public final class TeamManager {
     private final int defaultMaxMembers;
     private final int maxMembersHardCap;
     private final boolean friendlyFireDefault;
-    private final long newTeamProtectionMillis;
 
     private final Map<Integer, Team> teamsById = new HashMap<>();
     private final Map<UUID, Integer> teamIdByMember = new HashMap<>();
@@ -27,12 +26,11 @@ public final class TeamManager {
     private final Map<UUID, Boolean> teamChatToggle = new HashMap<>();
 
     public TeamManager(TeamDao teamDao, int defaultMaxMembers, int maxMembersHardCap,
-                        boolean friendlyFireDefault, long newTeamProtectionHours) {
+                        boolean friendlyFireDefault) {
         this.teamDao = teamDao;
         this.defaultMaxMembers = defaultMaxMembers;
         this.maxMembersHardCap = maxMembersHardCap;
         this.friendlyFireDefault = friendlyFireDefault;
-        this.newTeamProtectionMillis = TimeUnit.HOURS.toMillis(newTeamProtectionHours);
     }
 
     public void loadAll() {
@@ -60,9 +58,7 @@ public final class TeamManager {
         }
         Team team = teamDao.createTeam(name, leader.getUniqueId(), defaultMaxMembers);
         team.setFriendlyFire(friendlyFireDefault);
-        team.setProtectedUntil(System.currentTimeMillis() + newTeamProtectionMillis);
         teamDao.updateFriendlyFire(team.id(), friendlyFireDefault);
-        teamDao.updateProtectedUntil(team.id(), team.protectedUntil());
         index(team);
         return CreateResult.OK;
     }
@@ -225,11 +221,6 @@ public final class TeamManager {
     public void addRaidDefended(Team team) {
         team.addRaidDefended();
         teamDao.addRaidDefended(team.id());
-    }
-
-    public void setProtectedUntil(Team team, long until) {
-        team.setProtectedUntil(until);
-        teamDao.updateProtectedUntil(team.id(), until);
     }
 
     public boolean isTeamChatEnabled(UUID uuid) {

@@ -338,10 +338,6 @@ public final class TeamCommand implements CommandExecutor, TabCompleter {
         sender.sendMessage(Msg.of("&fFriendly Fire: " + (team.friendlyFire() ? "ON" : "OFF")));
         sender.sendMessage(Msg.of("&f킬: " + team.kills() + " / 약탈 점수: " + team.lootScore()));
         sender.sendMessage(Msg.of("&f레이드 방어: " + team.raidsDefended() + " / 레이드 성공: " + team.raidsWon()));
-        if (team.isProtected()) {
-            long minutes = (team.protectedUntil() - System.currentTimeMillis()) / 60000;
-            sender.sendMessage(Msg.of("&a보호 중 (남은 시간: 약 " + minutes + "분)"));
-        }
         return true;
     }
 

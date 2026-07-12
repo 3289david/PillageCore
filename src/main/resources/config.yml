@@ -20,8 +20,6 @@ combat:
   logout-penalty: true
 
 raid:
-  # 신규 팀 보호 시간(시간 단위). 3 또는 24 중 선택
-  new-team-protection-hours: 24
   raid-duration-minutes: 15
   logout-penalty: true
   block-tp-during-raid: true

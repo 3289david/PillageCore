@@ -18,7 +18,6 @@ public final class Team {
     private int lootScore;
     private int raidsWon;
     private int raidsDefended;
-    private long protectedUntil;
     private final long createdAt;
 
     private final Map<UUID, TeamRole> members = new LinkedHashMap<>();
@@ -106,18 +105,6 @@ public final class Team {
 
     public void addRaidDefended() {
         this.raidsDefended++;
-    }
-
-    public long protectedUntil() {
-        return protectedUntil;
-    }
-
-    public void setProtectedUntil(long protectedUntil) {
-        this.protectedUntil = protectedUntil;
-    }
-
-    public boolean isProtected() {
-        return System.currentTimeMillis() < protectedUntil;
     }
 
     public long createdAt() {

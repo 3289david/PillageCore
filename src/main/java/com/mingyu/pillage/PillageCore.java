@@ -122,8 +122,7 @@ public final class PillageCore extends JavaPlugin {
                 teamDao,
                 getConfig().getInt("team.default-max-members", 6),
                 getConfig().getInt("team.max-members-hard-cap", 12),
-                getConfig().getBoolean("team.friendly-fire-default", false),
-                getConfig().getLong("raid.new-team-protection-hours", 24));
+                getConfig().getBoolean("team.friendly-fire-default", false));
         teamManager.loadAll();
 
         tpManager = new TpManager(
