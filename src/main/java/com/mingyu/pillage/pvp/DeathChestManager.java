@@ -22,13 +22,14 @@ public final class DeathChestManager implements Listener {
         if (items.isEmpty()) return;
         Location blockLoc = location.getBlock().getLocation();
         blockLoc.getBlock().setType(Material.CHEST);
-        if (!(blockLoc.getBlock().getState() instanceof Chest chest)) {
+        // getState() (snapshot=true) is a detached copy - writes to its inventory never reach the
+        // real tile entity even after update(). getState(false) writes straight into the live block.
+        if (!(blockLoc.getBlock().getState(false) instanceof Chest chest)) {
             return;
         }
         for (ItemStack item : items) {
             chest.getBlockInventory().addItem(item);
         }
-        chest.update();
 
         // Chests stay at the death location forever and can be looted by anyone - no team or ownership check.
         chests.add(blockLoc);
