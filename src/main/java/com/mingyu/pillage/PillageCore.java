@@ -40,7 +40,6 @@ import com.mingyu.pillage.help.PillageHelpCommand;
 import com.mingyu.pillage.menu.MenuCommand;
 import com.mingyu.pillage.menu.MenuListener;
 import com.mingyu.pillage.menu.MenuService;
-import com.mingyu.pillage.pvp.DeathChestManager;
 import com.mingyu.pillage.pvp.KillStreakManager;
 import com.mingyu.pillage.pvp.PvpListener;
 import com.mingyu.pillage.qol.ClockCommand;
@@ -152,7 +151,6 @@ public final class PillageCore extends JavaPlugin {
                 getConfig().getInt("anticheat.punish.kick-violations", 40));
 
         KillStreakManager killStreakManager = new KillStreakManager();
-        DeathChestManager deathChestManager = new DeathChestManager();
 
         playtimeTracker = new PlaytimeTracker(this, statsDao);
         playtimeTracker.start();
@@ -186,7 +184,7 @@ public final class PillageCore extends JavaPlugin {
                 statsDao, deathLocationDao, staffModeManager, economyManager, rewardManager, eventBoxManager,
                 chatManager, shopManager);
         registerListeners(teamChatService, killLogDao, statsDao, deathLocationDao, killStreakManager,
-                deathChestManager, staffModeManager, eventBoxManager, chatManager);
+                staffModeManager, eventBoxManager, chatManager);
 
         getLogger().info("PillageCore 가 활성화되었습니다.");
     }
@@ -252,7 +250,7 @@ public final class PillageCore extends JavaPlugin {
 
     private void registerListeners(TeamChatService teamChatService, KillLogDao killLogDao, StatsDao statsDao,
                                     DeathLocationDao deathLocationDao, KillStreakManager killStreakManager,
-                                    DeathChestManager deathChestManager, StaffModeManager staffModeManager,
+                                    StaffModeManager staffModeManager,
                                     EventBoxManager eventBoxManager, ChatManager chatManager) {
         var pm = getServer().getPluginManager();
         pm.registerEvents(new FriendlyFireListener(teamManager), this);
@@ -262,8 +260,7 @@ public final class PillageCore extends JavaPlugin {
         pm.registerEvents(new TradeListener(tradeManager), this);
         pm.registerEvents(new MenuListener(), this);
         pm.registerEvents(new PvpListener(killLogDao, statsDao, deathLocationDao, teamManager, raidManager,
-                killStreakManager, deathChestManager), this);
-        pm.registerEvents(deathChestManager, this);
+                killStreakManager), this);
         pm.registerEvents(new MiningTracker(statsDao), this);
         pm.registerEvents(playtimeTracker, this);
         pm.registerEvents(staffModeManager, this);

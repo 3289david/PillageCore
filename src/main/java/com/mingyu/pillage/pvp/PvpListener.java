@@ -15,9 +15,6 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.inventory.ItemStack;
 
-import java.util.ArrayList;
-import java.util.List;
-
 public final class PvpListener implements Listener {
 
     private final KillLogDao killLogDao;
@@ -26,25 +23,19 @@ public final class PvpListener implements Listener {
     private final TeamManager teamManager;
     private final RaidManager raidManager;
     private final KillStreakManager killStreakManager;
-    private final DeathChestManager deathChestManager;
 
     public PvpListener(KillLogDao killLogDao, StatsDao statsDao, DeathLocationDao deathLocationDao,
-                        TeamManager teamManager, RaidManager raidManager, KillStreakManager killStreakManager,
-                        DeathChestManager deathChestManager) {
+                        TeamManager teamManager, RaidManager raidManager, KillStreakManager killStreakManager) {
         this.killLogDao = killLogDao;
         this.statsDao = statsDao;
         this.deathLocationDao = deathLocationDao;
         this.teamManager = teamManager;
         this.raidManager = raidManager;
         this.killStreakManager = killStreakManager;
-        this.deathChestManager = deathChestManager;
     }
 
     @EventHandler
     public void onDeath(PlayerDeathEvent event) {
-        // Force drops even if the keepInventory gamerule is on - the death chest is the whole point of the plugin.
-        event.setKeepInventory(false);
-
         Player victim = event.getEntity();
         Player killer = victim.getKiller();
 
@@ -84,10 +75,6 @@ public final class PvpListener implements Listener {
         }
 
         deathLocationDao.save(victim.getUniqueId(), victim.getLocation());
-
-        List<ItemStack> drops = new ArrayList<>(event.getDrops());
-        event.getDrops().clear();
-        deathChestManager.spawn(victim.getLocation(), drops, victim.getUniqueId());
     }
 
     private String prettyName(Material material) {

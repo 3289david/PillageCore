@@ -51,7 +51,9 @@ public final class RewardManager {
             return ClaimResult.ALREADY_CLAIMED;
         }
         rewardDao.setLastDailyClaim(player.getUniqueId(), now);
-        player.getInventory().addItem(new ItemStack(Material.COOKED_BEEF, (int) dailyRewardAmount));
+        var leftover = player.getInventory().addItem(new ItemStack(Material.COOKED_BEEF, (int) dailyRewardAmount));
+        // Inventory full: drop what didn't fit at the player's feet instead of silently discarding it.
+        leftover.values().forEach(item -> player.getWorld().dropItemNaturally(player.getLocation(), item));
         player.sendMessage(Msg.of("&a일일 보상으로 &e스테이크 " + dailyRewardAmount + "개&a를 받았습니다!"));
         return ClaimResult.OK;
     }
