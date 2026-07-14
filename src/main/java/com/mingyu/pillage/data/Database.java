@@ -25,9 +25,16 @@ public final class Database {
                 dataFolder.mkdirs();
             }
             File dbFile = new File(dataFolder, fileName);
+            plugin.getLogger().info("[DB] " + dbFile.getAbsolutePath() + " exists=" + dbFile.exists()
+                    + " size=" + dbFile.length() + " bytes");
             connection = DriverManager.getConnection("jdbc:sqlite:" + dbFile.getAbsolutePath());
             try (Statement st = connection.createStatement()) {
-                st.execute("PRAGMA journal_mode=WAL;");
+                // DELETE (not WAL) mode: every write already autocommits individually here, so with
+                // WAL a host that force-kills the process (or only backs up the .db file, not the
+                // separate -wal journal) loses whatever hadn't been checkpointed yet. DELETE mode
+                // writes straight into the main file with no separate journal left lingering after
+                // each commit, so nothing can go missing between the plugin's writes and a restart.
+                st.execute("PRAGMA journal_mode=DELETE;");
                 st.execute("PRAGMA foreign_keys=ON;");
             }
             createSchema();
