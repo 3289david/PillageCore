@@ -1,6 +1,8 @@
 package com.mingyu.pillage.reward;
 
 import com.mingyu.pillage.util.Msg;
+import org.bukkit.Bukkit;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -17,6 +19,17 @@ public final class DailyRewardCommand implements CommandExecutor {
 
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
+        if (args.length >= 2 && args[0].equalsIgnoreCase("reset")) {
+            if (!sender.hasPermission("pillage.admin")) {
+                sender.sendMessage(Msg.of("&c권한이 없습니다."));
+                return true;
+            }
+            OfflinePlayer target = Bukkit.getOfflinePlayer(args[1]);
+            rewardManager.resetRewards(target.getUniqueId());
+            sender.sendMessage(Msg.of("&a" + args[1] + " 님의 일일 보상 쿨타임과 플레이타임 보상 진행도를 초기화했습니다."));
+            return true;
+        }
+
         if (!(sender instanceof Player player)) {
             sender.sendMessage("플레이어만 사용할 수 있는 명령어입니다.");
             return true;

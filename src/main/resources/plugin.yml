@@ -75,8 +75,8 @@ commands:
     description: 액션바 시계 토글
     usage: /clock
   dailyreward:
-    description: 일일 보상 수령
-    usage: /dailyreward
+    description: 일일 보상 수령 (관리자는 reset <player>로 쿨타임 초기화 가능)
+    usage: /dailyreward [reset <player>]
     aliases: [일일보상]
   balance:
     description: 잔액 확인

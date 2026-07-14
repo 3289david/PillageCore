@@ -160,11 +160,11 @@ public final class PillageCore extends JavaPlugin {
 
         EconomyManager economyManager = new EconomyManager(economyDao);
         RewardManager rewardManager = new RewardManager(
-                rewardDao, statsDao, economyManager, playtimeTracker,
+                this, rewardDao, statsDao, economyManager, playtimeTracker,
                 getConfig().getLong("reward.daily-amount", 50),
                 getConfig().getInt("reward.playtime-milestone-hours", 1),
                 getConfig().getLong("reward.playtime-amount", 20));
-        rewardManager.startPlaytimeCheck(this);
+        rewardManager.startPlaytimeCheck();
 
         EventBoxManager eventBoxManager = new EventBoxManager(
                 this, economyManager,
