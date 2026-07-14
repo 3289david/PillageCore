@@ -144,6 +144,9 @@
 - `anticheat.punish.enabled`: 기본 `false` (경고만). 자동 킥을 원하면 `true`로 변경
 - `anticheat.*.enabled`: 검사별로 개별 on/off 가능
 - `chat.profanity-filter-enabled` / `chat.banned-words`: 욕설 필터 on/off와 단어 목록
+- 
+- 서버 재가동시 DB가 초기화됩니다.
+
 
 ## 데이터베이스 (SQLite)
 
