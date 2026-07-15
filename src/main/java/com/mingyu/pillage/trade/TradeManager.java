@@ -127,8 +127,16 @@ public final class TradeManager {
 
         tradeLogDao.log(session.playerA(), session.playerB(), summarize(itemsA), summarize(itemsB));
 
-        if (a != null) a.sendMessage(Msg.of("&a거래가 완료되었습니다."));
-        if (b != null) b.sendMessage(Msg.of("&a거래가 완료되었습니다."));
+        // Close the GUI: the slots still hold the original items (only copies were handed out above),
+        // so leaving it open lets a player un-toggle ready and pull their already-traded item back out.
+        if (a != null) {
+            a.closeInventory();
+            a.sendMessage(Msg.of("&a거래가 완료되었습니다."));
+        }
+        if (b != null) {
+            b.closeInventory();
+            b.sendMessage(Msg.of("&a거래가 완료되었습니다."));
+        }
     }
 
     public void cancelTrade(TradeSession session, String reason) {

@@ -36,7 +36,8 @@ public final class EventBoxCommand implements CommandExecutor {
         }
         var box = eventBoxManager.createBox();
         box.setAmount(amount);
-        target.getInventory().addItem(box);
+        var leftover = target.getInventory().addItem(box);
+        leftover.values().forEach(item -> target.getWorld().dropItemNaturally(target.getLocation(), item));
         target.sendMessage(Msg.of("&d이벤트 상자를 " + amount + "개 받았습니다!"));
         sender.sendMessage(Msg.of("&a" + target.getName() + " 님에게 이벤트 상자 " + amount + "개를 지급했습니다."));
         return true;

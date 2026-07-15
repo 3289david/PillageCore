@@ -51,8 +51,11 @@ public final class ShopManager {
         // Give the output first and only take the input if it actually fit - never take without paying out.
         var leftover = player.getInventory().addItem(new ItemStack(offer.outputMaterial(), offer.outputAmount()));
         if (!leftover.isEmpty()) {
-            for (ItemStack notAdded : leftover.values()) {
-                player.getInventory().removeItem(notAdded);
+            // leftover is what didn't fit; roll back only what actually got added, not the leftover amount.
+            int notAdded = leftover.values().stream().mapToInt(ItemStack::getAmount).sum();
+            int added = offer.outputAmount() - notAdded;
+            if (added > 0) {
+                player.getInventory().removeItem(new ItemStack(offer.outputMaterial(), added));
             }
             return ExchangeResult.INVENTORY_FULL;
         }
