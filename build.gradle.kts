@@ -8,7 +8,7 @@ plugins {
 }
 
 group = "com.mingyu.pillage"
-version = "1.0.0"
+version = "1.0.8"
 
 repositories {
     mavenCentral()

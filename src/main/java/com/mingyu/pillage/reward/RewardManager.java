@@ -5,9 +5,7 @@ import com.mingyu.pillage.data.dao.StatsDao;
 import com.mingyu.pillage.economy.EconomyManager;
 import com.mingyu.pillage.stats.PlaytimeTracker;
 import com.mingyu.pillage.util.Msg;
-import net.kyori.adventure.title.Title;
 import org.bukkit.Material;
-import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -59,8 +57,6 @@ public final class RewardManager {
         // Inventory full: drop what didn't fit at the player's feet instead of silently discarding it.
         leftover.values().forEach(item -> player.getWorld().dropItemNaturally(player.getLocation(), item));
         player.sendMessage(Msg.of("&a일일 보상으로 &e스테이크 " + dailyRewardAmount + "개&a를 받았습니다!"));
-        player.showTitle(Title.title(Msg.of("&a일일 보상"), Msg.of("&e스테이크 x" + dailyRewardAmount)));
-        player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1f, 1f);
         plugin.getLogger().info("[Reward] " + player.getName() + " claimed daily reward: " + dailyRewardAmount + "x COOKED_BEEF");
         return ClaimResult.OK;
     }
@@ -88,8 +84,6 @@ public final class RewardManager {
             rewardDao.setLastPlaytimeMilestoneHours(player.getUniqueId(), newMilestone);
             economyManager.deposit(player.getUniqueId(), playtimeRewardAmount);
             player.sendMessage(Msg.of("&a플레이타임 " + newMilestone + "시간 달성! &e" + playtimeRewardAmount + " 에메랄드&a를 받았습니다."));
-            player.showTitle(Title.title(Msg.of("&a플레이타임 보상"), Msg.of("&e에메랄드 +" + playtimeRewardAmount)));
-            player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1f, 1f);
             plugin.getLogger().info("[Reward] " + player.getName() + " reached " + newMilestone
                     + "h playtime milestone: +" + playtimeRewardAmount + " emerald balance");
         }

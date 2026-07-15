@@ -13,11 +13,11 @@
 ./gradlew clean build
 ```
 
-결과물은 `build/libs/PillageCore-1.0.0.jar` 하나입니다 (Mojang 매핑, sqlite-jdbc 셰이딩 포함, 서버에 바로 넣으면 됨). `release/PillageCore-1.0.0.jar` 에도 동일한 최신 빌드가 복사되어 있습니다.
+결과물은 `build/libs/PillageCore-<버전>.jar` 하나입니다 (Mojang 매핑, sqlite-jdbc 셰이딩 포함, 서버에 바로 넣으면 됨). `release/` 폴더에도 동일한 최신 빌드가 복사되어 있습니다. **파일명에 버전이 포함되므로, 새 릴리스를 설치할 때는 이전 버전 jar를 `plugins/` 폴더에서 반드시 지우고 새 jar로 교체한 뒤 서버를 완전히 재시작하세요** (`/reload`가 아니라 진짜 재시작). 콘솔에 뜨는 `Enabling PillageCore v<버전>` 로그로 실제 실행 중인 버전을 확인할 수 있습니다.
 
 ## 설치
 
-1. `release/PillageCore-1.0.0.jar` (또는 `build/libs/PillageCore-1.0.0.jar`) 를 Paper **26.1.x** 서버의 `plugins/` 폴더에 복사
+1. `release/` 또는 `build/libs/`의 최신 `PillageCore-<버전>.jar` 를 Paper **26.1.x** 서버의 `plugins/` 폴더에 복사 (이전 버전 jar가 있다면 삭제)
 2. 서버 시작 → `plugins/PillageCore/config.yml` 생성됨
 3. 필요하면 `config.yml` 수정 후 서버 재시작
 4. `spawn.world`가 실제 월드 이름과 다르면 `/spawn`이 기본 월드로 대체 이동하니 config에서 맞춰주세요.
