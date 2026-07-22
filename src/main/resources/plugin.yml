@@ -3,7 +3,7 @@ version: '${version}'
 main: com.mingyu.pillage.PillageCore
 api-version: '26.1'
 author: Mingyu
-description: Team / TP / Trade / Raid / Combat core systems for a pillage-PvP server
+description: Team / TP / Raid / Combat core systems for a pillage-PvP server (no player trading)
 
 commands:
   team:
@@ -39,15 +39,6 @@ commands:
   delhome:
     description: 홈 삭제
     usage: /delhome [이름]
-  trade:
-    description: 다른 플레이어에게 거래 요청
-    usage: /trade <player>
-  tradeaccept:
-    description: 거래 요청 수락
-    usage: /tradeaccept
-  tradedeny:
-    description: 거래 요청 거절
-    usage: /tradedeny
   menu:
     description: PillageCore GUI 메뉴 열기
     usage: /menu
@@ -111,8 +102,8 @@ commands:
     usage: /inspect <player>
     permission: pillage.admin
   logs:
-    description: 거래/킬/밴/TP 로그 조회
-    usage: /logs <trade|kill|ban|tp> [개수]
+    description: 킬/밴/TP 로그 조회
+    usage: /logs <kill|ban|tp> [개수]
     permission: pillage.admin
   pillageban:
     description: 플레이어 차단
@@ -129,9 +120,6 @@ permissions:
     default: true
   pillage.tp.*:
     description: TP 명령어 전체 권한
-    default: true
-  pillage.trade.*:
-    description: 거래 명령어 전체 권한
     default: true
   pillage.admin:
     description: 관리자 권한 (팀 최대인원 제한 없이 설정, 안티치트 경고 수신, 관리자 명령어 등)

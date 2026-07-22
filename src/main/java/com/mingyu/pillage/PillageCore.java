@@ -31,7 +31,6 @@ import com.mingyu.pillage.data.dao.RewardDao;
 import com.mingyu.pillage.data.dao.StatsDao;
 import com.mingyu.pillage.data.dao.TeamDao;
 import com.mingyu.pillage.data.dao.TpLogDao;
-import com.mingyu.pillage.data.dao.TradeLogDao;
 import com.mingyu.pillage.economy.BalanceCommand;
 import com.mingyu.pillage.economy.DepositCommand;
 import com.mingyu.pillage.economy.EconomyManager;
@@ -77,11 +76,6 @@ import com.mingyu.pillage.tp.command.SpawnCommand;
 import com.mingyu.pillage.tp.command.TpAcceptCommand;
 import com.mingyu.pillage.tp.command.TpDenyCommand;
 import com.mingyu.pillage.tp.command.TpaCommand;
-import com.mingyu.pillage.trade.TradeListener;
-import com.mingyu.pillage.trade.TradeManager;
-import com.mingyu.pillage.trade.command.TradeAcceptCommand;
-import com.mingyu.pillage.trade.command.TradeCommand;
-import com.mingyu.pillage.trade.command.TradeDenyCommand;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.Set;
@@ -93,7 +87,6 @@ public final class PillageCore extends JavaPlugin {
     private TpManager tpManager;
     private CombatManager combatManager;
     private RaidManager raidManager;
-    private TradeManager tradeManager;
     private AnticheatManager anticheatManager;
     private MenuService menuService;
     private PlaytimeTracker playtimeTracker;
@@ -108,7 +101,6 @@ public final class PillageCore extends JavaPlugin {
         TeamDao teamDao = new TeamDao(database);
         HomeDao homeDao = new HomeDao(database);
         LastLocationDao lastLocationDao = new LastLocationDao(database);
-        TradeLogDao tradeLogDao = new TradeLogDao(database);
         KillLogDao killLogDao = new KillLogDao(database);
         ReportLogDao reportLogDao = new ReportLogDao(database);
         BanLogDao banLogDao = new BanLogDao(database);
@@ -149,8 +141,6 @@ public final class PillageCore extends JavaPlugin {
         tpManager.registerGuard(combatManager);
         tpManager.registerGuard(raidManager);
 
-        tradeManager = new TradeManager(tradeLogDao);
-
         TeamChatService teamChatService = new TeamChatService();
         SpawnService spawnService = new SpawnService(this);
 
@@ -187,9 +177,9 @@ public final class PillageCore extends JavaPlugin {
                 getConfig().getBoolean("chat.profanity-filter-enabled", false),
                 Set.copyOf(getConfig().getStringList("chat.banned-words")));
 
-        menuService = new MenuService(teamManager, tpManager, tradeManager, spawnService, teamChatService, statsDao);
+        menuService = new MenuService(teamManager, tpManager, spawnService, teamChatService, statsDao);
 
-        registerCommands(teamChatService, spawnService, killLogDao, reportLogDao, banLogDao, tpLogDao, tradeLogDao,
+        registerCommands(teamChatService, spawnService, killLogDao, reportLogDao, banLogDao, tpLogDao,
                 statsDao, deathLocationDao, staffModeManager, economyManager, rewardManager, eventBoxManager, chatManager);
         registerListeners(teamChatService, killLogDao, statsDao, deathLocationDao, killStreakManager,
                 deathChestManager, staffModeManager, eventBoxManager, chatManager);
@@ -199,7 +189,7 @@ public final class PillageCore extends JavaPlugin {
 
     private void registerCommands(TeamChatService teamChatService, SpawnService spawnService,
                                    KillLogDao killLogDao, ReportLogDao reportLogDao, BanLogDao banLogDao,
-                                   TpLogDao tpLogDao, TradeLogDao tradeLogDao, StatsDao statsDao,
+                                   TpLogDao tpLogDao, StatsDao statsDao,
                                    DeathLocationDao deathLocationDao, StaffModeManager staffModeManager,
                                    EconomyManager economyManager, RewardManager rewardManager,
                                    EventBoxManager eventBoxManager, ChatManager chatManager) {
@@ -220,10 +210,6 @@ public final class PillageCore extends JavaPlugin {
         DelHomeCommand delHomeCommand = new DelHomeCommand(tpManager);
         getCommand("delhome").setExecutor(delHomeCommand);
         getCommand("delhome").setTabCompleter(delHomeCommand);
-
-        getCommand("trade").setExecutor(new TradeCommand(tradeManager));
-        getCommand("tradeaccept").setExecutor(new TradeAcceptCommand(tradeManager));
-        getCommand("tradedeny").setExecutor(new TradeDenyCommand(tradeManager));
 
         getCommand("menu").setExecutor(new MenuCommand(menuService));
         getCommand("pillagehelp").setExecutor(new PillageHelpCommand());
@@ -248,7 +234,7 @@ public final class PillageCore extends JavaPlugin {
         getCommand("report").setExecutor(new ReportCommand(reportLogDao));
         getCommand("staff").setExecutor(new StaffCommand(staffModeManager));
         getCommand("inspect").setExecutor(new InspectCommand());
-        getCommand("logs").setExecutor(new LogsCommand(killLogDao, banLogDao, tpLogDao, tradeLogDao));
+        getCommand("logs").setExecutor(new LogsCommand(killLogDao, banLogDao, tpLogDao));
         getCommand("pillageban").setExecutor(new BanCommand(banLogDao));
     }
 
@@ -262,7 +248,6 @@ public final class PillageCore extends JavaPlugin {
         pm.registerEvents(new CombatListener(combatManager), this);
         pm.registerEvents(new RaidListener(raidManager, teamManager), this);
         pm.registerEvents(new TpMoveListener(tpManager), this);
-        pm.registerEvents(new TradeListener(tradeManager), this);
         pm.registerEvents(new MenuListener(), this);
         pm.registerEvents(new PvpListener(killLogDao, statsDao, deathLocationDao, teamManager, raidManager,
                 killStreakManager, deathChestManager), this);
@@ -315,9 +300,6 @@ public final class PillageCore extends JavaPlugin {
 
     @Override
     public void onDisable() {
-        if (tradeManager != null) {
-            tradeManager.cancelAll("서버가 종료되었습니다");
-        }
         if (playtimeTracker != null) {
             playtimeTracker.flushAll();
         }

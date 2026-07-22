@@ -82,16 +82,6 @@ public final class Database {
                 );
             """);
             st.execute("""
-                CREATE TABLE IF NOT EXISTS trade_log (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    player_a TEXT NOT NULL,
-                    player_b TEXT NOT NULL,
-                    items_a TEXT NOT NULL,
-                    items_b TEXT NOT NULL,
-                    timestamp INTEGER NOT NULL
-                );
-            """);
-            st.execute("""
                 CREATE TABLE IF NOT EXISTS kill_log (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     killer TEXT,

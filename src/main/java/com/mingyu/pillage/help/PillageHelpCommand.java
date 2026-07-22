@@ -13,7 +13,7 @@ public final class PillageHelpCommand implements CommandExecutor {
 
     private static final List<List<String>> PAGES = List.of(
             List.of(
-                    "&e/menu &f- 팀/TP/거래/설정/통계를 GUI로 열기 (별칭: /pillage, /메뉴)",
+                    "&e/menu &f- 팀/TP/설정/통계를 GUI로 열기 (별칭: /pillage, /메뉴)",
                     "",
                     "&6[팀]",
                     "&e/team create <이름> &f- 팀 생성",
@@ -33,9 +33,6 @@ public final class PillageHelpCommand implements CommandExecutor {
                     "&e/tpa <player> &f, &e/tpaccept&f, &e/tpdeny",
                     "&e/spawn&f, &e/back&f, &e/home [이름]&f, &e/sethome [이름]&f, &e/delhome [이름]",
                     "&7(전투 중·소속 팀 레이드 중에는 텔레포트가 제한됩니다)",
-                    "",
-                    "&6[거래]",
-                    "&e/trade <player> &f- 거래 요청, &e/tradeaccept&f, &e/tradedeny",
                     "",
                     "&6[약탈/전투]",
                     "&7- 신규 팀은 생성 후 설정된 시간(기본 24시간) 동안 공격받지 않습니다.",
@@ -67,7 +64,7 @@ public final class PillageHelpCommand implements CommandExecutor {
                     "&e/report <player> <사유> &f- 누구나 신고 가능, 접수되면 관리자에게 알림",
                     "&e/staff &f- 투명화(관리자 모드) 토글",
                     "&e/inspect <player> &f- 인벤토리 읽기 전용 검사",
-                    "&e/logs <trade|kill|ban|tp> [개수] &f- 최근 로그 조회",
+                    "&e/logs <kill|ban|tp> [개수] &f- 최근 로그 조회",
                     "&e/pillageban <player> [사유] &f- 차단 + 로그 기록",
                     "&e/eventbox give <player> [수량] &f- 이벤트 상자 지급",
                     "&e/anticheat &f설정은 config.yml 의 anticheat 섹션에서 조절 (기본: 경고만, 매우 널널)"

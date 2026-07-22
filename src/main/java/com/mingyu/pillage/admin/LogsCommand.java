@@ -3,7 +3,6 @@ package com.mingyu.pillage.admin;
 import com.mingyu.pillage.data.dao.BanLogDao;
 import com.mingyu.pillage.data.dao.KillLogDao;
 import com.mingyu.pillage.data.dao.TpLogDao;
-import com.mingyu.pillage.data.dao.TradeLogDao;
 import com.mingyu.pillage.util.Msg;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -18,14 +17,12 @@ public final class LogsCommand implements CommandExecutor {
     private final KillLogDao killLogDao;
     private final BanLogDao banLogDao;
     private final TpLogDao tpLogDao;
-    private final TradeLogDao tradeLogDao;
     private final SimpleDateFormat format = new SimpleDateFormat("MM-dd HH:mm");
 
-    public LogsCommand(KillLogDao killLogDao, BanLogDao banLogDao, TpLogDao tpLogDao, TradeLogDao tradeLogDao) {
+    public LogsCommand(KillLogDao killLogDao, BanLogDao banLogDao, TpLogDao tpLogDao) {
         this.killLogDao = killLogDao;
         this.banLogDao = banLogDao;
         this.tpLogDao = tpLogDao;
-        this.tradeLogDao = tradeLogDao;
     }
 
     @Override
@@ -60,16 +57,7 @@ public final class LogsCommand implements CommandExecutor {
                             + e.world() + " " + (int) e.x() + "," + (int) e.y() + "," + (int) e.z()));
                 }
             }
-            case "trade" -> {
-                sender.sendMessage(Msg.of("&6=== 최근 거래 로그 ==="));
-                for (var e : tradeLogDao.recent(limit)) {
-                    sender.sendMessage(Msg.of("&7[" + format.format(new Date(e.timestamp())) + "] &f"
-                            + e.playerA() + " &7<-> &f" + e.playerB()));
-                    sender.sendMessage(Msg.of("&7  " + e.playerA() + ": " + e.itemsA()));
-                    sender.sendMessage(Msg.of("&7  " + e.playerB() + ": " + e.itemsB()));
-                }
-            }
-            default -> sender.sendMessage(Msg.of("&c종류는 kill, ban, tp, trade 중 하나여야 합니다."));
+            default -> sender.sendMessage(Msg.of("&c종류는 kill, ban, tp 중 하나여야 합니다."));
         }
         return true;
     }

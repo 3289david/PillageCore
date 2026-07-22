@@ -5,23 +5,20 @@ import com.mingyu.pillage.team.TeamChatService;
 import com.mingyu.pillage.team.TeamManager;
 import com.mingyu.pillage.tp.SpawnService;
 import com.mingyu.pillage.tp.TpManager;
-import com.mingyu.pillage.trade.TradeManager;
 import org.bukkit.entity.Player;
 
 public final class MenuService {
 
     private final TeamManager teamManager;
     private final TpManager tpManager;
-    private final TradeManager tradeManager;
     private final SpawnService spawnService;
     private final TeamChatService teamChatService;
     private final StatsDao statsDao;
 
-    public MenuService(TeamManager teamManager, TpManager tpManager, TradeManager tradeManager,
+    public MenuService(TeamManager teamManager, TpManager tpManager,
                         SpawnService spawnService, TeamChatService teamChatService, StatsDao statsDao) {
         this.teamManager = teamManager;
         this.tpManager = tpManager;
-        this.tradeManager = tradeManager;
         this.spawnService = spawnService;
         this.teamChatService = teamChatService;
         this.statsDao = statsDao;
@@ -37,10 +34,6 @@ public final class MenuService {
 
     public TpManager tpManager() {
         return tpManager;
-    }
-
-    public TradeManager tradeManager() {
-        return tradeManager;
     }
 
     public SpawnService spawnService() {
@@ -61,10 +54,6 @@ public final class MenuService {
 
     public void openTp(Player player) {
         player.openInventory(new TpMenu(this, player).getInventory());
-    }
-
-    public void openTrade(Player player) {
-        player.openInventory(new TradeMenu(this, player).getInventory());
     }
 
     public void openSettings(Player player) {

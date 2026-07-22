@@ -1,6 +1,8 @@
 # PillageCore
 
-팀 기반 약탈(Raid) PvP 서버를 위한 올인원 Paper 플러그인입니다. 팀, 텔레포트, 물물교환, 레이드, 전투 태그, PvP 부가기능, 개인 통계, 서버 관리, QoL, 보상, 에메랄드 경제, 채팅 확장, GUI 메뉴, 널널한 안티치트까지 전부 포함되어 있습니다.
+팀 기반 약탈(Raid) PvP 서버를 위한 올인원 Paper 플러그인입니다. 팀, 텔레포트, 레이드, 전투 태그, PvP 부가기능, 개인 통계, 서버 관리, QoL, 보상, 에메랄드 경제, 채팅 확장, GUI 메뉴, 널널한 안티치트까지 전부 포함되어 있습니다.
+
+> 이 브랜치(`no-trade`)는 플레이어 간 물물교환(`/trade`) 기능만 제거한 버전입니다.
 
 - **대상 서버**: Paper `26.1.2` (stable dev-bundle) — 실제 호스팅사(FeatherMC 등)에서 돌아가는 최신 안정 버전 기준입니다.
 - **Java**: 25 (툴체인)
@@ -32,7 +34,7 @@
 
 | 명령어 | 설명 |
 |---|---|
-| `/menu` (별칭 `/pillage`, `/메뉴`) | 팀/TP/거래/설정/통계 GUI 메인 메뉴 |
+| `/menu` (별칭 `/pillage`, `/메뉴`) | 팀/TP/설정/통계 GUI 메인 메뉴 |
 
 텍스트 입력이 필요한 것(팀 이름 짓기 등)만 명령어로 남아 있고, 나머지(멤버 추방, 채팅·FF 토글, 홈 이동/설정, 랭킹, 초대·요청 수락/거절 등)는 전부 GUI 클릭으로 처리됩니다.
 
@@ -65,15 +67,6 @@
 | `/death` | 마지막 사망 위치로 이동 |
 
 모든 텔레포트는 5초 카운트다운 + 이동 시 취소 + 쿨타임이 적용되며, 전투 중이거나 소속 팀이 레이드당하는 중에는 사용할 수 없습니다.
-
-### 거래
-
-| 명령어 | 설명 |
-|---|---|
-| `/trade <player>` | 거래 요청 |
-| `/tradeaccept` / `/tradedeny` | 요청 수락/거절 |
-
-수락하면 두 플레이어에게 같은 거래 GUI가 열립니다. 각자 자신의 칸에만 아이템을 넣을 수 있고, 확인 버튼을 누르면 자신의 칸이 잠깁니다(취소해야 다시 수정 가능). 둘 다 확인하면 아이템이 교환되고 `trade_log` 테이블에 기록됩니다. 창을 닫으면 자동으로 취소되고 아이템은 그대로 돌려받습니다.
 
 ### 통계 / QoL
 
@@ -114,7 +107,7 @@
 | `/report <player> <사유>` | 신고 (누구나 사용 가능, 접수 시 관리자에게 알림) |
 | `/staff` | 투명화(관리자 모드) 토글 |
 | `/inspect <player>` | 인벤토리 읽기 전용 검사 |
-| `/logs <trade\|kill\|ban\|tp> [개수]` | 최근 로그 조회 |
+| `/logs <kill\|ban\|tp> [개수]` | 최근 로그 조회 |
 | `/pillageban <player> [사유]` | 차단 + 로그 기록 |
 
 ## 자동 시스템 (명령어 없음)
@@ -131,7 +124,6 @@
 |---|---|---|
 | `pillage.team.*` | true | 팀 명령어 |
 | `pillage.tp.*` | true | TP 명령어 |
-| `pillage.trade.*` | true | 거래 명령어 |
 | `pillage.admin` | op | 안티치트 경고 수신, 관리자 명령어(`/staff`, `/inspect`, `/logs`, `/pillageban`, `/eventbox`), 인원수 제한 우회 등 |
 
 ## 주요 설정 (config.yml)
@@ -146,10 +138,10 @@
 
 ## 데이터베이스 (SQLite)
 
-`teams`, `team_members`, `homes`, `last_locations`, `trade_log`, `kill_log`, `report_log`, `ban_log`, `tp_log`, `player_stats`, `death_locations`, `daily_rewards`, `playtime_rewards`, `economy` 테이블로 구성됩니다. 전부 `plugins/PillageCore/pillage.db` 한 파일에 저장됩니다.
+`teams`, `team_members`, `homes`, `last_locations`, `kill_log`, `report_log`, `ban_log`, `tp_log`, `player_stats`, `death_locations`, `daily_rewards`, `playtime_rewards`, `economy` 테이블로 구성됩니다. 전부 `plugins/PillageCore/pillage.db` 한 파일에 저장됩니다.
 
 ## 구현 현황
 
-**전부 완료** — 최초 기획서(팀/TP/거래/약탈/전투/안티치트/랜드(의도적으로 없음)/PvP/GUI/통계/서버관리/QoL/보상/경제/채팅) 16개 대분류를 모두 구현했습니다.
+최초 기획서(팀/TP/거래/약탈/전투/안티치트/랜드(의도적으로 없음)/PvP/GUI/통계/서버관리/QoL/보상/경제/채팅) 16개 대분류를 모두 구현한 `master` 브랜치에서, 이 `no-trade` 브랜치는 **플레이어 간 물물교환(`/trade`, 거래 GUI, 거래 로그)만 제거**했습니다. 나머지 기능은 동일합니다.
 
-의도적으로 제외한 것: **랜드 기능**(레이드 서버 특성상 팀 홈만 존재하도록 기획에 명시됨), **자동 재접속**(서버 플러그인이 구현할 수 없는 클라이언트 기능).
+의도적으로 제외한 것: **랜드 기능**(레이드 서버 특성상 팀 홈만 존재하도록 기획에 명시됨), **자동 재접속**(서버 플러그인이 구현할 수 없는 클라이언트 기능), **플레이어 간 거래**(이 브랜치에서 제거).
