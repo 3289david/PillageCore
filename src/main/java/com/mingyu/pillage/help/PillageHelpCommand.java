@@ -56,7 +56,7 @@ public final class PillageHelpCommand implements CommandExecutor {
                     "&e/dailyreward &f- 24시간마다 1회, 스테이크 수령 가능",
                     "&e/shop &f- 아이템 교환 상점 GUI 열기",
                     "&7- 누적 플레이타임이 일정 시간을 넘길 때마다 자동으로 에메랄드 보상이 지급됩니다.",
-                    "&7- 관리자가 지급하는 이벤트 상자를 우클릭하면 랜덤 보상을 받습니다."
+                    "&7- 관리자가 지급하는 이벤트 상자를 우클릭하면 랜덤 OP 아이템(네더라이트 장비, 토템 등)을 받습니다."
             ),
             List.of(
                     "&6[채팅]",

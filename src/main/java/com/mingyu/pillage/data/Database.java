@@ -177,6 +177,14 @@ public final class Database {
                     output_amount INTEGER NOT NULL
                 );
             """);
+            st.execute("""
+                CREATE TABLE IF NOT EXISTS donors (
+                    uuid TEXT PRIMARY KEY,
+                    badge TEXT NOT NULL DEFAULT '★',
+                    added_by TEXT,
+                    added_at INTEGER NOT NULL
+                );
+            """);
         }
     }
 

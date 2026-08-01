@@ -3,10 +3,12 @@ package com.mingyu.pillage.pvp;
 import com.mingyu.pillage.data.dao.DeathLocationDao;
 import com.mingyu.pillage.data.dao.KillLogDao;
 import com.mingyu.pillage.data.dao.StatsDao;
+import com.mingyu.pillage.donor.DonorManager;
 import com.mingyu.pillage.raid.RaidManager;
 import com.mingyu.pillage.team.Team;
 import com.mingyu.pillage.team.TeamManager;
 import com.mingyu.pillage.util.Msg;
+import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -23,15 +25,18 @@ public final class PvpListener implements Listener {
     private final TeamManager teamManager;
     private final RaidManager raidManager;
     private final KillStreakManager killStreakManager;
+    private final DonorManager donorManager;
 
     public PvpListener(KillLogDao killLogDao, StatsDao statsDao, DeathLocationDao deathLocationDao,
-                        TeamManager teamManager, RaidManager raidManager, KillStreakManager killStreakManager) {
+                        TeamManager teamManager, RaidManager raidManager, KillStreakManager killStreakManager,
+                        DonorManager donorManager) {
         this.killLogDao = killLogDao;
         this.statsDao = statsDao;
         this.deathLocationDao = deathLocationDao;
         this.teamManager = teamManager;
         this.raidManager = raidManager;
         this.killStreakManager = killStreakManager;
+        this.donorManager = donorManager;
     }
 
     @EventHandler
@@ -50,8 +55,12 @@ public final class PvpListener implements Listener {
         killLogDao.log(killer == null ? null : killer.getUniqueId(), victim.getUniqueId(), weapon);
 
         if (killer != null) {
-            Bukkit.broadcast(Msg.of("&f" + killer.getName() + " &7⚔ &f"
-                    + (weapon == null ? "맨손" : weapon) + " &7➤ &f" + victim.getName()));
+            Component feed = donorManager.displayName(killer)
+                    .append(Msg.of(" &7⚔ &f" + (weapon == null ? "맨손" : weapon) + " &7➤ "))
+                    .append(donorManager.displayName(victim));
+            Bukkit.broadcast(feed);
+            // Our own kill feed already announced this death - don't also show vanilla's plain-text one.
+            event.deathMessage(null);
         }
 
         statsDao.addDeath(victim.getUniqueId());

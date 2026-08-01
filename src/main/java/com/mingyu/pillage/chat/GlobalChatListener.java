@@ -1,5 +1,6 @@
 package com.mingyu.pillage.chat;
 
+import com.mingyu.pillage.donor.DonorManager;
 import com.mingyu.pillage.team.Team;
 import com.mingyu.pillage.team.TeamManager;
 import com.mingyu.pillage.util.Msg;
@@ -16,10 +17,12 @@ public final class GlobalChatListener implements Listener {
 
     private final ChatManager chatManager;
     private final TeamManager teamManager;
+    private final DonorManager donorManager;
 
-    public GlobalChatListener(ChatManager chatManager, TeamManager teamManager) {
+    public GlobalChatListener(ChatManager chatManager, TeamManager teamManager, DonorManager donorManager) {
         this.chatManager = chatManager;
         this.teamManager = teamManager;
+        this.donorManager = donorManager;
     }
 
     @EventHandler(ignoreCancelled = true)
@@ -41,7 +44,9 @@ public final class GlobalChatListener implements Listener {
 
         Team team = teamManager.getTeam(player.getUniqueId());
         String prefix = team != null ? "&8[&6" + team.name() + "&8] " : "";
-        Component finalMessage = Msg.of(prefix + "&f" + player.getName() + "&7: &f" + filtered);
+        Component finalMessage = Msg.of(prefix)
+                .append(donorManager.displayName(player))
+                .append(Msg.of("&7: &f" + filtered));
 
         event.renderer((source, displayName, message, viewer) -> finalMessage);
 

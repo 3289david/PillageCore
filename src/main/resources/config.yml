@@ -16,8 +16,8 @@ tp:
   cancel-on-move-threshold: 0.3
 
 combat:
+  # 플레이어끼리 서로 때릴 때만 태그되며, 태그된 동안에는 엔더펄/코러스프룻으로 도주할 수 없습니다.
   tag-duration-seconds: 30
-  logout-penalty: true
 
 raid:
   raid-duration-minutes: 15
@@ -71,12 +71,10 @@ reward:
   daily-amount: 50
   playtime-milestone-hours: 1
   playtime-amount: 20
-  event-box-min-reward: 10
-  event-box-max-reward: 100
 
 chat:
   cooldown-seconds: 2
-  profanity-filter-enabled: false
+  profanity-filter-enabled: true
   banned-words:
     - "시발"
     - "씨발"

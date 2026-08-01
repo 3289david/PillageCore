@@ -17,6 +17,8 @@ import com.mingyu.pillage.chat.ChatManager;
 import com.mingyu.pillage.chat.GlobalChatListener;
 import com.mingyu.pillage.chat.MsgCommand;
 import com.mingyu.pillage.chat.ReplyCommand;
+import com.mingyu.pillage.combat.CombatFleeListener;
+import com.mingyu.pillage.combat.CombatTagManager;
 import com.mingyu.pillage.data.Database;
 import com.mingyu.pillage.data.dao.BanLogDao;
 import com.mingyu.pillage.data.dao.DeathLocationDao;
@@ -30,7 +32,13 @@ import com.mingyu.pillage.data.dao.StatsDao;
 import com.mingyu.pillage.data.dao.TeamDao;
 import com.mingyu.pillage.data.dao.TpLogDao;
 import com.mingyu.pillage.data.dao.ShopDao;
+import com.mingyu.pillage.data.dao.DonorDao;
 import com.mingyu.pillage.data.dao.TradeLogDao;
+import com.mingyu.pillage.donor.DonorCommand;
+import com.mingyu.pillage.donor.DonorManager;
+import com.mingyu.pillage.donor.DonorParticleTask;
+import com.mingyu.pillage.donor.DonorPerksListener;
+import com.mingyu.pillage.donor.StatueCommand;
 import com.mingyu.pillage.economy.BalanceCommand;
 import com.mingyu.pillage.economy.DepositCommand;
 import com.mingyu.pillage.economy.EconomyManager;
@@ -117,6 +125,7 @@ public final class PillageCore extends JavaPlugin {
         RewardDao rewardDao = new RewardDao(database);
         EconomyDao economyDao = new EconomyDao(database);
         ShopDao shopDao = new ShopDao(database);
+        DonorDao donorDao = new DonorDao(database);
 
         teamManager = new TeamManager(
                 teamDao,
@@ -151,6 +160,12 @@ public final class PillageCore extends JavaPlugin {
                 getConfig().getInt("anticheat.punish.kick-violations", 40));
 
         KillStreakManager killStreakManager = new KillStreakManager();
+        CombatTagManager combatTagManager = new CombatTagManager(getConfig().getInt("combat.tag-duration-seconds", 30));
+
+        DonorManager donorManager = new DonorManager(donorDao);
+        donorManager.loadAll();
+        tpManager.setDonorManager(donorManager);
+        new DonorParticleTask(donorManager).start(this);
 
         playtimeTracker = new PlaytimeTracker(this, statsDao);
         playtimeTracker.start();
@@ -166,25 +181,22 @@ public final class PillageCore extends JavaPlugin {
                 getConfig().getLong("reward.playtime-amount", 20));
         rewardManager.startPlaytimeCheck();
 
-        EventBoxManager eventBoxManager = new EventBoxManager(
-                this, economyManager,
-                getConfig().getLong("reward.event-box-min-reward", 10),
-                getConfig().getLong("reward.event-box-max-reward", 100));
+        EventBoxManager eventBoxManager = new EventBoxManager(this);
 
         StaffModeManager staffModeManager = new StaffModeManager(this);
 
         ChatManager chatManager = new ChatManager(
                 getConfig().getInt("chat.cooldown-seconds", 2),
-                getConfig().getBoolean("chat.profanity-filter-enabled", false),
+                getConfig().getBoolean("chat.profanity-filter-enabled", true),
                 Set.copyOf(getConfig().getStringList("chat.banned-words")));
 
         menuService = new MenuService(teamManager, tpManager, tradeManager, spawnService, teamChatService, statsDao);
 
         registerCommands(teamChatService, spawnService, killLogDao, reportLogDao, banLogDao, tpLogDao, tradeLogDao,
                 statsDao, deathLocationDao, staffModeManager, economyManager, rewardManager, eventBoxManager,
-                chatManager, shopManager);
+                chatManager, shopManager, donorManager);
         registerListeners(teamChatService, killLogDao, statsDao, deathLocationDao, killStreakManager,
-                staffModeManager, eventBoxManager, chatManager);
+                staffModeManager, eventBoxManager, chatManager, combatTagManager, donorManager);
 
         getLogger().info("PillageCore 가 활성화되었습니다.");
     }
@@ -195,7 +207,7 @@ public final class PillageCore extends JavaPlugin {
                                    DeathLocationDao deathLocationDao, StaffModeManager staffModeManager,
                                    EconomyManager economyManager, RewardManager rewardManager,
                                    EventBoxManager eventBoxManager, ChatManager chatManager,
-                                   ShopManager shopManager) {
+                                   ShopManager shopManager, DonorManager donorManager) {
         getCommand("team").setExecutor(new TeamCommand(teamManager, tpManager));
         getCommand("team").setTabCompleter((TeamCommand) getCommand("team").getExecutor());
         getCommand("tc").setExecutor(new TeamChatCommand(teamManager, teamChatService));
@@ -246,12 +258,16 @@ public final class PillageCore extends JavaPlugin {
         getCommand("inspect").setExecutor(new InspectCommand());
         getCommand("logs").setExecutor(new LogsCommand(killLogDao, banLogDao, tpLogDao, tradeLogDao));
         getCommand("pillageban").setExecutor(new BanCommand(banLogDao));
+
+        getCommand("donor").setExecutor(new DonorCommand(donorManager));
+        getCommand("statue").setExecutor(new StatueCommand(donorManager));
     }
 
     private void registerListeners(TeamChatService teamChatService, KillLogDao killLogDao, StatsDao statsDao,
                                     DeathLocationDao deathLocationDao, KillStreakManager killStreakManager,
                                     StaffModeManager staffModeManager,
-                                    EventBoxManager eventBoxManager, ChatManager chatManager) {
+                                    EventBoxManager eventBoxManager, ChatManager chatManager,
+                                    CombatTagManager combatTagManager, DonorManager donorManager) {
         var pm = getServer().getPluginManager();
         pm.registerEvents(new FriendlyFireListener(teamManager), this);
         pm.registerEvents(new TeamChatListener(teamManager, teamChatService), this);
@@ -260,13 +276,15 @@ public final class PillageCore extends JavaPlugin {
         pm.registerEvents(new TradeListener(tradeManager), this);
         pm.registerEvents(new MenuListener(), this);
         pm.registerEvents(new PvpListener(killLogDao, statsDao, deathLocationDao, teamManager, raidManager,
-                killStreakManager), this);
+                killStreakManager, donorManager), this);
         pm.registerEvents(new MiningTracker(statsDao), this);
         pm.registerEvents(playtimeTracker, this);
         pm.registerEvents(staffModeManager, this);
         pm.registerEvents(new InspectListener(), this);
         pm.registerEvents(new EventBoxListener(eventBoxManager), this);
-        pm.registerEvents(new GlobalChatListener(chatManager, teamManager), this);
+        pm.registerEvents(new GlobalChatListener(chatManager, teamManager, donorManager), this);
+        pm.registerEvents(new CombatFleeListener(combatTagManager), this);
+        pm.registerEvents(new DonorPerksListener(this, donorManager), this);
         registerAnticheatListeners(pm);
     }
 

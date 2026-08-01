@@ -2,8 +2,10 @@ package com.mingyu.pillage.tp;
 
 import com.mingyu.pillage.data.dao.HomeDao;
 import com.mingyu.pillage.data.dao.LastLocationDao;
+import com.mingyu.pillage.donor.DonorManager;
 import com.mingyu.pillage.util.Msg;
 import org.bukkit.Location;
+import org.bukkit.Particle;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitTask;
@@ -27,6 +29,7 @@ public final class TpManager {
     private final Map<UUID, TpRequest> incomingRequests = new HashMap<>();
     private final Map<UUID, Long> cooldowns = new HashMap<>();
     private final Map<UUID, PendingTeleport> pendingTeleports = new HashMap<>();
+    private DonorManager donorManager;
 
     public TpManager(JavaPlugin plugin, HomeDao homeDao, LastLocationDao lastLocationDao,
                       int countdownSeconds, int cooldownSeconds, int requestTimeoutSeconds,
@@ -44,11 +47,20 @@ public final class TpManager {
     private record PendingTeleport(Location startLocation, Location destination, BukkitTask task) {
     }
 
+    public void setDonorManager(DonorManager donorManager) {
+        this.donorManager = donorManager;
+    }
+
     public boolean hasPendingTeleport(UUID uuid) {
         return pendingTeleports.containsKey(uuid);
     }
 
     public void requestTeleport(Player player, Location destination) {
+        if (player.isGliding()) {
+            player.sendMessage(Msg.of("&c비행 중에는 텔레포트를 사용할 수 없습니다."));
+            return;
+        }
+
         Long cooldownUntil = cooldowns.get(player.getUniqueId());
         if (cooldownUntil != null && cooldownUntil > System.currentTimeMillis() && !player.hasPermission("pillage.admin")) {
             long remaining = (cooldownUntil - System.currentTimeMillis()) / 1000 + 1;
@@ -75,10 +87,20 @@ public final class TpManager {
     }
 
     private void executeTeleport(Player player, Location destination) {
-        lastLocationDao.save(player.getUniqueId(), player.getLocation());
+        Location origin = player.getLocation();
+        lastLocationDao.save(player.getUniqueId(), origin);
+
+        if (donorManager != null && donorManager.isDonor(player.getUniqueId())) {
+            origin.getWorld().spawnParticle(Particle.PORTAL, origin.clone().add(0, 1, 0), 40, 0.3, 0.5, 0.3, 0.1);
+        }
+
         player.teleport(destination);
         player.sendMessage(Msg.of("&a이동했습니다."));
         cooldowns.put(player.getUniqueId(), System.currentTimeMillis() + cooldownSeconds * 1000L);
+
+        if (donorManager != null && donorManager.isDonor(player.getUniqueId())) {
+            destination.getWorld().spawnParticle(Particle.PORTAL, destination.clone().add(0, 1, 0), 40, 0.3, 0.5, 0.3, 0.1);
+        }
     }
 
     public void onMove(Player player, Location to) {

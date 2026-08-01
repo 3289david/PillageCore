@@ -125,6 +125,13 @@ commands:
   shop:
     description: 상점 GUI 열기 (관리자는 add/remove/list로 항목 관리)
     usage: /shop [add|remove|list] [args]
+  donor:
+    description: 후원자 등록/해제/목록 (관리자 전용, 수동 등록)
+    usage: /donor <add|remove> <player> [배지] 또는 /donor list
+    permission: pillage.admin
+  statue:
+    description: 자신의 동상(아머스탠드) 설치 (후원자 전용)
+    usage: /statue
 
 permissions:
   pillage.team.*:
