@@ -15,29 +15,37 @@ import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Supplier;
 
-/** Loot box that hands out a random "OP" item instead of currency. */
+/**
+ * Loot box that hands out a random "OP" item. Every item carries 3-4 enchantments,
+ * but every enchantment/level/combo here is something you could actually put together
+ * on an anvil in vanilla survival (legal max levels, no mutually-exclusive pairs) -
+ * nothing here requires creative mode or commands to obtain.
+ */
 public final class EventBoxManager {
 
     private final NamespacedKey key;
 
     private final List<Supplier<ItemStack>> opItemPool = List.of(
             () -> enchant(new ItemStack(Material.NETHERITE_SWORD), Enchantment.SHARPNESS, 5,
-                    Enchantment.UNBREAKING, 3, Enchantment.MENDING, 1),
+                    Enchantment.LOOTING, 3, Enchantment.UNBREAKING, 3, Enchantment.MENDING, 1),
+            () -> enchant(new ItemStack(Material.NETHERITE_AXE), Enchantment.SHARPNESS, 5,
+                    Enchantment.EFFICIENCY, 5, Enchantment.UNBREAKING, 3, Enchantment.MENDING, 1),
+            () -> enchant(new ItemStack(Material.NETHERITE_PICKAXE), Enchantment.EFFICIENCY, 5,
+                    Enchantment.FORTUNE, 3, Enchantment.UNBREAKING, 3, Enchantment.MENDING, 1),
             () -> enchant(new ItemStack(Material.NETHERITE_HELMET), Enchantment.PROTECTION, 4,
-                    Enchantment.UNBREAKING, 3, Enchantment.MENDING, 1),
+                    Enchantment.RESPIRATION, 3, Enchantment.UNBREAKING, 3, Enchantment.MENDING, 1),
             () -> enchant(new ItemStack(Material.NETHERITE_CHESTPLATE), Enchantment.PROTECTION, 4,
-                    Enchantment.UNBREAKING, 3, Enchantment.MENDING, 1),
+                    Enchantment.THORNS, 3, Enchantment.UNBREAKING, 3, Enchantment.MENDING, 1),
             () -> enchant(new ItemStack(Material.NETHERITE_LEGGINGS), Enchantment.PROTECTION, 4,
                     Enchantment.UNBREAKING, 3, Enchantment.MENDING, 1),
             () -> enchant(new ItemStack(Material.NETHERITE_BOOTS), Enchantment.PROTECTION, 4,
-                    Enchantment.UNBREAKING, 3, Enchantment.MENDING, 1),
-            () -> enchant(new ItemStack(Material.ELYTRA), Enchantment.UNBREAKING, 3, Enchantment.MENDING, 1),
-            () -> enchant(new ItemStack(Material.BOW), Enchantment.POWER, 5, Enchantment.INFINITY, 1,
-                    Enchantment.UNBREAKING, 3),
-            () -> enchant(new ItemStack(Material.TRIDENT), Enchantment.LOYALTY, 3, Enchantment.CHANNELING, 1),
-            () -> new ItemStack(Material.TOTEM_OF_UNDYING),
-            () -> new ItemStack(Material.NETHERITE_INGOT, 4),
-            () -> new ItemStack(Material.ENCHANTED_GOLDEN_APPLE, 2)
+                    Enchantment.DEPTH_STRIDER, 3, Enchantment.UNBREAKING, 3, Enchantment.MENDING, 1),
+            () -> enchant(new ItemStack(Material.BOW), Enchantment.POWER, 5, Enchantment.PUNCH, 2,
+                    Enchantment.FLAME, 1, Enchantment.UNBREAKING, 3),
+            () -> enchant(new ItemStack(Material.CROSSBOW), Enchantment.QUICK_CHARGE, 3,
+                    Enchantment.MULTISHOT, 1, Enchantment.UNBREAKING, 3, Enchantment.MENDING, 1),
+            () -> enchant(new ItemStack(Material.TRIDENT), Enchantment.LOYALTY, 3,
+                    Enchantment.IMPALING, 5, Enchantment.UNBREAKING, 3, Enchantment.MENDING, 1)
     );
 
     public EventBoxManager(JavaPlugin plugin) {
@@ -54,7 +62,9 @@ public final class EventBoxManager {
     }
 
     public ItemStack createBox() {
-        ItemStack item = new ItemBuilder(Material.CHEST)
+        // Deliberately not a placeable block (Material.CHEST etc.) - a block item right-clicked
+        // against a block would try to place it instead of firing our "open" interaction.
+        ItemStack item = new ItemBuilder(Material.BUNDLE)
                 .name("&d&l✦ 이벤트 상자 ✦")
                 .lore("&7우클릭하여 열기", "&7랜덤 OP 아이템 획득")
                 .build();

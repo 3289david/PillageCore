@@ -1,5 +1,6 @@
 package com.mingyu.pillage.tp;
 
+import com.mingyu.pillage.combat.CombatTagManager;
 import com.mingyu.pillage.data.dao.HomeDao;
 import com.mingyu.pillage.data.dao.LastLocationDao;
 import com.mingyu.pillage.donor.DonorManager;
@@ -30,6 +31,7 @@ public final class TpManager {
     private final Map<UUID, Long> cooldowns = new HashMap<>();
     private final Map<UUID, PendingTeleport> pendingTeleports = new HashMap<>();
     private DonorManager donorManager;
+    private CombatTagManager combatTagManager;
 
     public TpManager(JavaPlugin plugin, HomeDao homeDao, LastLocationDao lastLocationDao,
                       int countdownSeconds, int cooldownSeconds, int requestTimeoutSeconds,
@@ -51,6 +53,10 @@ public final class TpManager {
         this.donorManager = donorManager;
     }
 
+    public void setCombatTagManager(CombatTagManager combatTagManager) {
+        this.combatTagManager = combatTagManager;
+    }
+
     public boolean hasPendingTeleport(UUID uuid) {
         return pendingTeleports.containsKey(uuid);
     }
@@ -58,6 +64,12 @@ public final class TpManager {
     public void requestTeleport(Player player, Location destination) {
         if (player.isGliding()) {
             player.sendMessage(Msg.of("&c비행 중에는 텔레포트를 사용할 수 없습니다."));
+            return;
+        }
+
+        if (combatTagManager != null && combatTagManager.isInCombat(player.getUniqueId())) {
+            player.sendMessage(Msg.of("&c전투 중에는 텔레포트를 사용할 수 없습니다. ("
+                    + combatTagManager.remainingSeconds(player.getUniqueId()) + "초 남음)"));
             return;
         }
 

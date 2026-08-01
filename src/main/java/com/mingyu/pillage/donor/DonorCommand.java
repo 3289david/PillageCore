@@ -14,9 +14,11 @@ import java.util.UUID;
 public final class DonorCommand implements CommandExecutor {
 
     private final DonorManager donorManager;
+    private final DonorNametagManager nametagManager;
 
-    public DonorCommand(DonorManager donorManager) {
+    public DonorCommand(DonorManager donorManager, DonorNametagManager nametagManager) {
         this.donorManager = donorManager;
+        this.nametagManager = nametagManager;
     }
 
     @Override
@@ -50,12 +52,17 @@ public final class DonorCommand implements CommandExecutor {
                 sender.sendMessage(Msg.of("&a" + target.getName() + " 님을 후원자로 등록했습니다."));
                 Player online = target.getPlayer();
                 if (online != null) {
+                    nametagManager.refresh(online);
                     online.sendMessage(Msg.of("&d&l후원자 등급이 적용되었습니다! 감사합니다."));
                 }
             }
             case "remove" -> {
                 donorManager.remove(target.getUniqueId());
                 sender.sendMessage(Msg.of("&e" + target.getName() + " 님의 후원자 등급을 해제했습니다."));
+                Player online = target.getPlayer();
+                if (online != null) {
+                    nametagManager.refresh(online);
+                }
             }
             default -> sender.sendMessage(Msg.of("&c사용법: /donor <add|remove> <player> [배지] &f또는 &c/donor list"));
         }

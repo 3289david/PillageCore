@@ -17,7 +17,7 @@ import com.mingyu.pillage.chat.ChatManager;
 import com.mingyu.pillage.chat.GlobalChatListener;
 import com.mingyu.pillage.chat.MsgCommand;
 import com.mingyu.pillage.chat.ReplyCommand;
-import com.mingyu.pillage.combat.CombatFleeListener;
+import com.mingyu.pillage.combat.CombatTagListener;
 import com.mingyu.pillage.combat.CombatTagManager;
 import com.mingyu.pillage.data.Database;
 import com.mingyu.pillage.data.dao.BanLogDao;
@@ -36,6 +36,7 @@ import com.mingyu.pillage.data.dao.DonorDao;
 import com.mingyu.pillage.data.dao.TradeLogDao;
 import com.mingyu.pillage.donor.DonorCommand;
 import com.mingyu.pillage.donor.DonorManager;
+import com.mingyu.pillage.donor.DonorNametagManager;
 import com.mingyu.pillage.donor.DonorParticleTask;
 import com.mingyu.pillage.donor.DonorPerksListener;
 import com.mingyu.pillage.donor.StatueCommand;
@@ -161,9 +162,12 @@ public final class PillageCore extends JavaPlugin {
 
         KillStreakManager killStreakManager = new KillStreakManager();
         CombatTagManager combatTagManager = new CombatTagManager(getConfig().getInt("combat.tag-duration-seconds", 30));
+        tpManager.setCombatTagManager(combatTagManager);
 
         DonorManager donorManager = new DonorManager(donorDao);
+        DonorNametagManager donorNametagManager = new DonorNametagManager(donorManager);
         donorManager.loadAll();
+        donorNametagManager.applyToOnlinePlayers(this);
         tpManager.setDonorManager(donorManager);
         new DonorParticleTask(donorManager).start(this);
 
@@ -194,9 +198,9 @@ public final class PillageCore extends JavaPlugin {
 
         registerCommands(teamChatService, spawnService, killLogDao, reportLogDao, banLogDao, tpLogDao, tradeLogDao,
                 statsDao, deathLocationDao, staffModeManager, economyManager, rewardManager, eventBoxManager,
-                chatManager, shopManager, donorManager);
+                chatManager, shopManager, donorManager, donorNametagManager);
         registerListeners(teamChatService, killLogDao, statsDao, deathLocationDao, killStreakManager,
-                staffModeManager, eventBoxManager, chatManager, combatTagManager, donorManager);
+                staffModeManager, eventBoxManager, chatManager, combatTagManager, donorManager, donorNametagManager);
 
         getLogger().info("PillageCore 가 활성화되었습니다.");
     }
@@ -207,7 +211,8 @@ public final class PillageCore extends JavaPlugin {
                                    DeathLocationDao deathLocationDao, StaffModeManager staffModeManager,
                                    EconomyManager economyManager, RewardManager rewardManager,
                                    EventBoxManager eventBoxManager, ChatManager chatManager,
-                                   ShopManager shopManager, DonorManager donorManager) {
+                                   ShopManager shopManager, DonorManager donorManager,
+                                   DonorNametagManager donorNametagManager) {
         getCommand("team").setExecutor(new TeamCommand(teamManager, tpManager));
         getCommand("team").setTabCompleter((TeamCommand) getCommand("team").getExecutor());
         getCommand("tc").setExecutor(new TeamChatCommand(teamManager, teamChatService));
@@ -259,7 +264,7 @@ public final class PillageCore extends JavaPlugin {
         getCommand("logs").setExecutor(new LogsCommand(killLogDao, banLogDao, tpLogDao, tradeLogDao));
         getCommand("pillageban").setExecutor(new BanCommand(banLogDao));
 
-        getCommand("donor").setExecutor(new DonorCommand(donorManager));
+        getCommand("donor").setExecutor(new DonorCommand(donorManager, donorNametagManager));
         getCommand("statue").setExecutor(new StatueCommand(donorManager));
     }
 
@@ -267,7 +272,8 @@ public final class PillageCore extends JavaPlugin {
                                     DeathLocationDao deathLocationDao, KillStreakManager killStreakManager,
                                     StaffModeManager staffModeManager,
                                     EventBoxManager eventBoxManager, ChatManager chatManager,
-                                    CombatTagManager combatTagManager, DonorManager donorManager) {
+                                    CombatTagManager combatTagManager, DonorManager donorManager,
+                                    DonorNametagManager donorNametagManager) {
         var pm = getServer().getPluginManager();
         pm.registerEvents(new FriendlyFireListener(teamManager), this);
         pm.registerEvents(new TeamChatListener(teamManager, teamChatService), this);
@@ -283,8 +289,8 @@ public final class PillageCore extends JavaPlugin {
         pm.registerEvents(new InspectListener(), this);
         pm.registerEvents(new EventBoxListener(eventBoxManager), this);
         pm.registerEvents(new GlobalChatListener(chatManager, teamManager, donorManager), this);
-        pm.registerEvents(new CombatFleeListener(combatTagManager), this);
-        pm.registerEvents(new DonorPerksListener(this, donorManager), this);
+        pm.registerEvents(new CombatTagListener(combatTagManager), this);
+        pm.registerEvents(new DonorPerksListener(this, donorManager, donorNametagManager), this);
         registerAnticheatListeners(pm);
     }
 

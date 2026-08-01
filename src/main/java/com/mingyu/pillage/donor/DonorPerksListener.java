@@ -20,15 +20,18 @@ public final class DonorPerksListener implements Listener {
 
     private final JavaPlugin plugin;
     private final DonorManager donorManager;
+    private final DonorNametagManager nametagManager;
 
-    public DonorPerksListener(JavaPlugin plugin, DonorManager donorManager) {
+    public DonorPerksListener(JavaPlugin plugin, DonorManager donorManager, DonorNametagManager nametagManager) {
         this.plugin = plugin;
         this.donorManager = donorManager;
+        this.nametagManager = nametagManager;
     }
 
     @EventHandler
     public void onJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
+        nametagManager.refresh(player);
         if (!donorManager.isDonor(player.getUniqueId())) return;
 
         Component message = Component.text("✦ ")
