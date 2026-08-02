@@ -32,7 +32,8 @@ public final class PillageHelpCommand implements CommandExecutor {
                     "&6[텔레포트]",
                     "&e/tpa <player> &f, &e/tpaccept&f, &e/tpdeny",
                     "&e/spawn&f, &e/back&f, &e/home [이름]&f, &e/sethome [이름]&f, &e/delhome [이름]",
-                    "&7(전투/레이드 중에도 텔레포트가 항상 가능합니다)",
+                    "&7(비행 중이거나 방금 다른 플레이어와 맞붙어 전투 중일 때는 텔레포트를 쓸 수 없습니다.",
+                    "&7 엔더펄/코러스프룻 같은 바닐라 이동수단은 그대로 가능합니다)",
                     "",
                     "&6[거래]",
                     "&e/trade <player> &f- 거래 요청, &e/tradeaccept&f, &e/tradedeny",
@@ -56,7 +57,8 @@ public final class PillageHelpCommand implements CommandExecutor {
                     "&e/dailyreward &f- 24시간마다 1회, 스테이크 수령 가능",
                     "&e/shop &f- 아이템 교환 상점 GUI 열기",
                     "&7- 누적 플레이타임이 일정 시간을 넘길 때마다 자동으로 에메랄드 보상이 지급됩니다.",
-                    "&7- 관리자가 지급하는 이벤트 상자를 우클릭하면 랜덤 OP 아이템(네더라이트 장비, 토템 등)을 받습니다."
+                    "&7- 관리자가 지급하는 이벤트 상자를 우클릭하면 랜덤 보상을 받습니다. 대부분(약 81%)은",
+                    "&7 스테이크/빵/석탄 같은 평범한 보상이고, 가끔(항목당 약 1.9%) OP 네더라이트 장비가 나옵니다."
             ),
             List.of(
                     "&6[채팅]",
@@ -67,12 +69,23 @@ public final class PillageHelpCommand implements CommandExecutor {
                     "&e/report <player> <사유> &f- 누구나 신고 가능, 접수되면 관리자에게 알림",
                     "&e/staff &f- 투명화(관리자 모드) 토글",
                     "&e/inspect <player> &f- 인벤토리 읽기 전용 검사",
-                    "&e/logs <trade|kill|ban|tp> [개수] &f- 최근 로그 조회",
+                    "&e/logs <kill|ban|tp|trade> [개수] &f- 최근 로그 조회",
                     "&e/pillageban <player> [사유] &f- 차단 + 로그 기록",
                     "&e/eventbox give <player> [수량] &f- 이벤트 상자 지급",
                     "&e/shop add <내는아이템> <내는수량> <받는아이템> <받는수량> &f- 상점 항목 추가",
                     "&e/shop remove <id> &f, &e/shop list &f- 상점 항목 삭제/조회",
                     "&e/anticheat &f설정은 config.yml 의 anticheat 섹션에서 조절 (기본: 경고만, 매우 널널)"
+            ),
+            List.of(
+                    "&6[후원자] &7(결제 연동 없음 - 관리자가 수동으로 등록)",
+                    "&e/donor add <player> [배지] &f/ &e/donor remove <player> &f/ &e/donor list &7(관리자)",
+                    "&e/statue &f- 자기 얼굴 동상 설치 (후원자 전용)",
+                    "&e/pet name <이름> &f/ &e/pet variant <종류> &f- 고양이 펫 이름·무늬 설정 (후원자 전용)",
+                    "&7- 후원자로 등록되면 채팅/킬피드/이름표가 꾸며지고, 입장 시 폭죽·파티클이 터지며,",
+                    "&7 고양이 펫이 자동으로 따라다니고, 스폰의 '명예의 전당'에 동상이 자동으로 세워집니다.",
+                    "&7 후원자가 해제되면 동상과 펫도 자동으로 사라집니다.",
+                    "&7- 전투 중에는 이름표 색과 펫만 잠시 사라져 일반 플레이어처럼 보입니다",
+                    "&7 (채팅/킬피드/탭리스트 표시는 항상 그대로 유지됩니다)."
             )
     );
 

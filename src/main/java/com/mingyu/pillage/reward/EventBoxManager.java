@@ -16,43 +16,56 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Supplier;
 
 /**
- * Loot box that hands out a random "OP" item. Every item carries 3-4 enchantments,
- * but every enchantment/level/combo here is something you could actually put together
- * on an anvil in vanilla survival (legal max levels, no mutually-exclusive pairs) -
- * nothing here requires creative mode or commands to obtain.
+ * Loot box weighted heavily toward junk (common) with a small chance at real OP gear (rare).
+ * Every enchanted item carries 3-4 enchantments, all vanilla-legal combos/levels achievable
+ * on an anvil in normal survival - nothing here requires creative mode or commands.
  */
 public final class EventBoxManager {
 
+    private record WeightedEntry(int weight, Supplier<ItemStack> item) {
+    }
+
     private final NamespacedKey key;
 
-    private final List<Supplier<ItemStack>> opItemPool = List.of(
-            () -> enchant(new ItemStack(Material.NETHERITE_SWORD), Enchantment.SHARPNESS, 5,
-                    Enchantment.LOOTING, 3, Enchantment.UNBREAKING, 3, Enchantment.MENDING, 1),
-            () -> enchant(new ItemStack(Material.NETHERITE_AXE), Enchantment.SHARPNESS, 5,
-                    Enchantment.EFFICIENCY, 5, Enchantment.UNBREAKING, 3, Enchantment.MENDING, 1),
-            () -> enchant(new ItemStack(Material.NETHERITE_PICKAXE), Enchantment.EFFICIENCY, 5,
-                    Enchantment.FORTUNE, 3, Enchantment.UNBREAKING, 3, Enchantment.MENDING, 1),
-            () -> enchant(new ItemStack(Material.NETHERITE_HELMET), Enchantment.PROTECTION, 4,
-                    Enchantment.RESPIRATION, 3, Enchantment.UNBREAKING, 3, Enchantment.MENDING, 1),
-            () -> enchant(new ItemStack(Material.NETHERITE_CHESTPLATE), Enchantment.PROTECTION, 4,
-                    Enchantment.THORNS, 3, Enchantment.UNBREAKING, 3, Enchantment.MENDING, 1),
-            () -> enchant(new ItemStack(Material.NETHERITE_LEGGINGS), Enchantment.PROTECTION, 4,
-                    Enchantment.UNBREAKING, 3, Enchantment.MENDING, 1),
-            () -> enchant(new ItemStack(Material.NETHERITE_BOOTS), Enchantment.PROTECTION, 4,
-                    Enchantment.DEPTH_STRIDER, 3, Enchantment.UNBREAKING, 3, Enchantment.MENDING, 1),
-            () -> enchant(new ItemStack(Material.BOW), Enchantment.POWER, 5, Enchantment.PUNCH, 2,
-                    Enchantment.FLAME, 1, Enchantment.UNBREAKING, 3),
-            () -> enchant(new ItemStack(Material.CROSSBOW), Enchantment.QUICK_CHARGE, 3,
-                    Enchantment.MULTISHOT, 1, Enchantment.UNBREAKING, 3, Enchantment.MENDING, 1),
-            () -> enchant(new ItemStack(Material.TRIDENT), Enchantment.LOYALTY, 3,
-                    Enchantment.IMPALING, 5, Enchantment.UNBREAKING, 3, Enchantment.MENDING, 1)
+    private final List<WeightedEntry> pool = List.of(
+            // Junk / common - high weight, this is what you'll get most of the time.
+            new WeightedEntry(40, () -> new ItemStack(Material.COOKED_BEEF, 32)),
+            new WeightedEntry(30, () -> new ItemStack(Material.BREAD, 16)),
+            new WeightedEntry(25, () -> new ItemStack(Material.COAL, 16)),
+            new WeightedEntry(20, () -> new ItemStack(Material.ROTTEN_FLESH, 8)),
+            new WeightedEntry(15, () -> new ItemStack(Material.IRON_INGOT, 4)),
+
+            // OP gear - low weight, this is the rare jackpot.
+            new WeightedEntry(3, () -> enchant(new ItemStack(Material.NETHERITE_SWORD), Enchantment.SHARPNESS, 5,
+                    Enchantment.LOOTING, 3, Enchantment.UNBREAKING, 3, Enchantment.MENDING, 1)),
+            new WeightedEntry(3, () -> enchant(new ItemStack(Material.NETHERITE_AXE), Enchantment.SHARPNESS, 5,
+                    Enchantment.EFFICIENCY, 5, Enchantment.UNBREAKING, 3, Enchantment.MENDING, 1)),
+            new WeightedEntry(3, () -> enchant(new ItemStack(Material.NETHERITE_PICKAXE), Enchantment.EFFICIENCY, 5,
+                    Enchantment.FORTUNE, 3, Enchantment.UNBREAKING, 3, Enchantment.MENDING, 1)),
+            new WeightedEntry(3, () -> enchant(new ItemStack(Material.NETHERITE_HELMET), Enchantment.PROTECTION, 4,
+                    Enchantment.RESPIRATION, 3, Enchantment.UNBREAKING, 3, Enchantment.MENDING, 1)),
+            new WeightedEntry(3, () -> enchant(new ItemStack(Material.NETHERITE_CHESTPLATE), Enchantment.PROTECTION, 4,
+                    Enchantment.THORNS, 3, Enchantment.UNBREAKING, 3, Enchantment.MENDING, 1)),
+            new WeightedEntry(3, () -> enchant(new ItemStack(Material.NETHERITE_LEGGINGS), Enchantment.PROTECTION, 4,
+                    Enchantment.UNBREAKING, 3, Enchantment.MENDING, 1)),
+            new WeightedEntry(3, () -> enchant(new ItemStack(Material.NETHERITE_BOOTS), Enchantment.PROTECTION, 4,
+                    Enchantment.DEPTH_STRIDER, 3, Enchantment.UNBREAKING, 3, Enchantment.MENDING, 1)),
+            new WeightedEntry(3, () -> enchant(new ItemStack(Material.BOW), Enchantment.POWER, 5, Enchantment.PUNCH, 2,
+                    Enchantment.FLAME, 1, Enchantment.UNBREAKING, 3)),
+            new WeightedEntry(3, () -> enchant(new ItemStack(Material.CROSSBOW), Enchantment.QUICK_CHARGE, 3,
+                    Enchantment.MULTISHOT, 1, Enchantment.UNBREAKING, 3, Enchantment.MENDING, 1)),
+            new WeightedEntry(3, () -> enchant(new ItemStack(Material.TRIDENT), Enchantment.LOYALTY, 3,
+                    Enchantment.IMPALING, 5, Enchantment.UNBREAKING, 3, Enchantment.MENDING, 1))
     );
+
+    private final int totalWeight;
 
     public EventBoxManager(JavaPlugin plugin) {
         this.key = new NamespacedKey(plugin, "event_box");
+        this.totalWeight = pool.stream().mapToInt(WeightedEntry::weight).sum();
     }
 
-    private ItemStack enchant(ItemStack item, Object... enchantLevelPairs) {
+    private static ItemStack enchant(ItemStack item, Object... enchantLevelPairs) {
         ItemMeta meta = item.getItemMeta();
         for (int i = 0; i + 1 < enchantLevelPairs.length; i += 2) {
             meta.addEnchant((Enchantment) enchantLevelPairs[i], (int) enchantLevelPairs[i + 1], true);
@@ -61,12 +74,24 @@ public final class EventBoxManager {
         return item;
     }
 
+    private ItemStack rollReward() {
+        int roll = ThreadLocalRandom.current().nextInt(totalWeight);
+        int cumulative = 0;
+        for (WeightedEntry entry : pool) {
+            cumulative += entry.weight();
+            if (roll < cumulative) {
+                return entry.item().get();
+            }
+        }
+        return pool.get(pool.size() - 1).item().get();
+    }
+
     public ItemStack createBox() {
         // Deliberately not a placeable block (Material.CHEST etc.) - a block item right-clicked
         // against a block would try to place it instead of firing our "open" interaction.
         ItemStack item = new ItemBuilder(Material.BUNDLE)
                 .name("&d&l✦ 이벤트 상자 ✦")
-                .lore("&7우클릭하여 열기", "&7랜덤 OP 아이템 획득")
+                .lore("&7우클릭하여 열기", "&7대부분은 평범한 보상, 아주 가끔 OP 아이템")
                 .build();
         ItemMeta meta = item.getItemMeta();
         meta.getPersistentDataContainer().set(key, PersistentDataType.BYTE, (byte) 1);
@@ -81,14 +106,13 @@ public final class EventBoxManager {
 
     /** Consumes one item from the player's main hand (must already be verified as an event box). */
     public void openFromMainHand(Player player) {
-        Supplier<ItemStack> pick = opItemPool.get(ThreadLocalRandom.current().nextInt(opItemPool.size()));
-        ItemStack reward = pick.get();
+        ItemStack reward = rollReward();
 
         var leftover = player.getInventory().addItem(reward);
         for (ItemStack extra : leftover.values()) {
             player.getWorld().dropItemNaturally(player.getLocation(), extra);
         }
-        player.sendMessage(Msg.of("&d이벤트 상자를 열어 &e" + reward.getType() + "&d 을(를) 획득했습니다!"));
+        player.sendMessage(Msg.of("&d이벤트 상자를 열어 &e" + reward.getAmount() + "x " + reward.getType() + "&d 을(를) 획득했습니다!"));
 
         ItemStack hand = player.getInventory().getItemInMainHand();
         if (hand.getAmount() <= 1) {
