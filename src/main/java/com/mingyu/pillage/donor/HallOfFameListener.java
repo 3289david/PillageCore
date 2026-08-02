@@ -31,9 +31,10 @@ public final class HallOfFameListener implements Listener {
         }
     }
 
+    // No admin bypass here - the whole point is that the monument (floor, pillars, roof)
+    // is exactly as indestructible as the statues, for everyone, all the time.
     @EventHandler(ignoreCancelled = true)
     public void onBlockBreak(BlockBreakEvent event) {
-        if (event.getPlayer().hasPermission("pillage.admin")) return;
         if (hallOfFameManager.isWithinHallOfFame(event.getBlock().getLocation())) {
             event.setCancelled(true);
             event.getPlayer().sendMessage(Msg.of("&c명예의 전당은 부술 수 없습니다."));
@@ -43,7 +44,6 @@ public final class HallOfFameListener implements Listener {
     @EventHandler(ignoreCancelled = true)
     public void onBlockPlace(BlockPlaceEvent event) {
         Player player = event.getPlayer();
-        if (player.hasPermission("pillage.admin")) return;
         if (hallOfFameManager.isWithinHallOfFame(event.getBlock().getLocation())) {
             event.setCancelled(true);
             player.sendMessage(Msg.of("&c명예의 전당에는 블록을 설치할 수 없습니다."));

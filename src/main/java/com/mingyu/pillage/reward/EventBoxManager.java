@@ -6,6 +6,7 @@ import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
@@ -87,14 +88,19 @@ public final class EventBoxManager {
     }
 
     public ItemStack createBox() {
-        // Deliberately not a placeable block (Material.CHEST etc.) - a block item right-clicked
-        // against a block would try to place it instead of firing our "open" interaction.
-        ItemStack item = new ItemBuilder(Material.BUNDLE)
+        // Plain, non-block, non-special item: no placement behavior (unlike CHEST) and no
+        // built-in client-side interaction UI of its own (unlike BUNDLE, which pops its own
+        // bundle-contents view on right-click and can swallow the click before plugin logic
+        // ever sees a normal use). Nether star has zero vanilla interaction behavior, so our
+        // PlayerInteractEvent handler is guaranteed to be the only thing responding to the click.
+        ItemStack item = new ItemBuilder(Material.NETHER_STAR)
                 .name("&d&l✦ 이벤트 상자 ✦")
                 .lore("&7우클릭하여 열기", "&7대부분은 평범한 보상, 아주 가끔 OP 아이템")
                 .build();
         ItemMeta meta = item.getItemMeta();
         meta.getPersistentDataContainer().set(key, PersistentDataType.BYTE, (byte) 1);
+        meta.addEnchant(Enchantment.UNBREAKING, 1, true);
+        meta.addItemFlags(ItemFlag.HIDE_ENCHANTS, ItemFlag.HIDE_ATTRIBUTES);
         item.setItemMeta(meta);
         return item;
     }

@@ -32,6 +32,7 @@ public final class HallOfFameManager {
     private static final int ROW_SPACING_Z = 4;
     private static final int PLATFORM_MARGIN = 3;
     private static final int MAX_ROWS = 6;
+    private static final int PILLAR_HEIGHT = 5;
 
     private final JavaPlugin plugin;
     private final DonorManager donorManager;
@@ -91,21 +92,55 @@ public final class HallOfFameManager {
         int halfWidth = (ROW_LENGTH * SLOT_SPACING_X) / 2 + PLATFORM_MARGIN;
         int depth = MAX_ROWS * ROW_SPACING_Z + PLATFORM_MARGIN;
         int baseY = origin.getBlockY() - 1;
+        int roofY = baseY + 1 + PILLAR_HEIGHT;
 
-        for (int dx = -halfWidth; dx <= halfWidth; dx++) {
-            for (int dz = -1; dz <= depth; dz++) {
-                world.getBlockAt(origin.getBlockX() + dx, baseY, origin.getBlockZ() + dz)
-                        .setType(Material.SMOOTH_QUARTZ);
-                // Clear headroom above the floor so the monument doesn't get buried in existing terrain.
-                for (int dy = 0; dy <= 3; dy++) {
-                    world.getBlockAt(origin.getBlockX() + dx, baseY + 1 + dy, origin.getBlockZ() + dz)
-                            .setType(Material.AIR);
+        // Floor, cleared headroom up to the roof, and the roof cap itself (with a 1-block eave
+        // overhang) - built in one pass over the full footprint including the overhang margin.
+        for (int dx = -halfWidth - 1; dx <= halfWidth + 1; dx++) {
+            for (int dz = -2; dz <= depth + 1; dz++) {
+                int worldX = origin.getBlockX() + dx;
+                int worldZ = origin.getBlockZ() + dz;
+                if (dx >= -halfWidth && dx <= halfWidth && dz >= -1 && dz <= depth) {
+                    world.getBlockAt(worldX, baseY, worldZ).setType(Material.SMOOTH_QUARTZ);
                 }
+                for (int dy = 1; dy < roofY - baseY; dy++) {
+                    world.getBlockAt(worldX, baseY + dy, worldZ).setType(Material.AIR);
+                }
+                world.getBlockAt(worldX, roofY, worldZ).setType(Material.SMOOTH_QUARTZ);
             }
         }
 
-        spawnHologram(origin.clone().add(0, 2.5, depth - 1), "&e&l✦ 명예의 전당 ✦");
-        spawnHologram(origin.clone().add(0, 1.9, depth - 1), "&7후원자들을 기립니다");
+        // Low curb around the platform edge, left open at the front (dz = -1) as the entrance
+        // that /spawn drops players straight into.
+        for (int dx = -halfWidth; dx <= halfWidth; dx++) {
+            world.getBlockAt(origin.getBlockX() + dx, baseY + 1, origin.getBlockZ() + depth)
+                    .setType(Material.SMOOTH_QUARTZ_SLAB);
+        }
+        for (int dz = 0; dz <= depth; dz++) {
+            world.getBlockAt(origin.getBlockX() - halfWidth, baseY + 1, origin.getBlockZ() + dz)
+                    .setType(Material.SMOOTH_QUARTZ_SLAB);
+            world.getBlockAt(origin.getBlockX() + halfWidth, baseY + 1, origin.getBlockZ() + dz)
+                    .setType(Material.SMOOTH_QUARTZ_SLAB);
+        }
+
+        // Colonnade: pillars along both long edges, each capped with a glowing lantern set into
+        // the roof, so the hall reads as an actual open-air pavilion instead of a bare floor.
+        for (int dz = -1; dz <= depth; dz += 6) {
+            buildPillar(world, origin.getBlockX() - halfWidth, baseY, origin.getBlockZ() + dz, roofY);
+            buildPillar(world, origin.getBlockX() + halfWidth, baseY, origin.getBlockZ() + dz, roofY);
+        }
+        buildPillar(world, origin.getBlockX() - halfWidth, baseY, origin.getBlockZ() + depth, roofY);
+        buildPillar(world, origin.getBlockX() + halfWidth, baseY, origin.getBlockZ() + depth, roofY);
+
+        spawnHologram(origin.clone().add(0, 4.5, depth - 1), "&e&l✦ 명예의 전당 ✦");
+        spawnHologram(origin.clone().add(0, 3.9, depth - 1), "&7후원자들을 기립니다");
+    }
+
+    private void buildPillar(World world, int x, int baseY, int z, int roofY) {
+        for (int y = baseY + 1; y < roofY; y++) {
+            world.getBlockAt(x, y, z).setType(Material.QUARTZ_PILLAR);
+        }
+        world.getBlockAt(x, roofY, z).setType(Material.SEA_LANTERN);
     }
 
     private void spawnHologram(Location location, String text) {
@@ -198,11 +233,12 @@ public final class HallOfFameManager {
     /** Whether a location falls inside the monument's protected footprint (platform + statues). */
     public boolean isWithinHallOfFame(Location location) {
         if (origin == null || location.getWorld() != origin.getWorld()) return false;
-        int halfWidth = (ROW_LENGTH * SLOT_SPACING_X) / 2 + PLATFORM_MARGIN;
-        int depth = MAX_ROWS * ROW_SPACING_Z + PLATFORM_MARGIN;
+        // +1 margin on width/depth to also cover the roof's eave overhang.
+        int halfWidth = (ROW_LENGTH * SLOT_SPACING_X) / 2 + PLATFORM_MARGIN + 1;
+        int depth = MAX_ROWS * ROW_SPACING_Z + PLATFORM_MARGIN + 1;
         int dx = location.getBlockX() - origin.getBlockX();
         int dz = location.getBlockZ() - origin.getBlockZ();
         int dy = location.getBlockY() - (origin.getBlockY() - 1);
-        return dx >= -halfWidth && dx <= halfWidth && dz >= -1 && dz <= depth && dy >= 0 && dy <= 4;
+        return dx >= -halfWidth && dx <= halfWidth && dz >= -2 && dz <= depth && dy >= 0 && dy <= (1 + PILLAR_HEIGHT);
     }
 }
