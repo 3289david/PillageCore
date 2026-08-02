@@ -185,6 +185,29 @@ public final class Database {
                     added_at INTEGER NOT NULL
                 );
             """);
+            st.execute("""
+                CREATE TABLE IF NOT EXISTS donor_pets (
+                    uuid TEXT PRIMARY KEY,
+                    name TEXT,
+                    variant TEXT NOT NULL DEFAULT 'TABBY'
+                );
+            """);
+            st.execute("""
+                CREATE TABLE IF NOT EXISTS hall_of_fame (
+                    uuid TEXT PRIMARY KEY,
+                    slot INTEGER NOT NULL UNIQUE
+                );
+            """);
+            st.execute("""
+                CREATE TABLE IF NOT EXISTS hall_of_fame_meta (
+                    id INTEGER PRIMARY KEY CHECK (id = 1),
+                    built INTEGER NOT NULL DEFAULT 0,
+                    world TEXT,
+                    origin_x INTEGER,
+                    origin_y INTEGER,
+                    origin_z INTEGER
+                );
+            """);
         }
     }
 

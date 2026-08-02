@@ -33,12 +33,20 @@ import com.mingyu.pillage.data.dao.TeamDao;
 import com.mingyu.pillage.data.dao.TpLogDao;
 import com.mingyu.pillage.data.dao.ShopDao;
 import com.mingyu.pillage.data.dao.DonorDao;
+import com.mingyu.pillage.data.dao.DonorPetDao;
+import com.mingyu.pillage.data.dao.HallOfFameDao;
+import com.mingyu.pillage.data.dao.HallOfFameMetaDao;
 import com.mingyu.pillage.data.dao.TradeLogDao;
+import com.mingyu.pillage.donor.DonorCombatVisibilityManager;
 import com.mingyu.pillage.donor.DonorCommand;
 import com.mingyu.pillage.donor.DonorManager;
 import com.mingyu.pillage.donor.DonorNametagManager;
 import com.mingyu.pillage.donor.DonorParticleTask;
 import com.mingyu.pillage.donor.DonorPerksListener;
+import com.mingyu.pillage.donor.DonorPetManager;
+import com.mingyu.pillage.donor.HallOfFameListener;
+import com.mingyu.pillage.donor.HallOfFameManager;
+import com.mingyu.pillage.donor.PetCommand;
 import com.mingyu.pillage.donor.StatueCommand;
 import com.mingyu.pillage.economy.BalanceCommand;
 import com.mingyu.pillage.economy.DepositCommand;
@@ -127,6 +135,9 @@ public final class PillageCore extends JavaPlugin {
         EconomyDao economyDao = new EconomyDao(database);
         ShopDao shopDao = new ShopDao(database);
         DonorDao donorDao = new DonorDao(database);
+        DonorPetDao donorPetDao = new DonorPetDao(database);
+        HallOfFameDao hallOfFameDao = new HallOfFameDao(database);
+        HallOfFameMetaDao hallOfFameMetaDao = new HallOfFameMetaDao(database);
 
         teamManager = new TeamManager(
                 teamDao,
@@ -169,7 +180,12 @@ public final class PillageCore extends JavaPlugin {
         donorManager.loadAll();
         donorNametagManager.applyToOnlinePlayers(this);
         tpManager.setDonorManager(donorManager);
-        new DonorParticleTask(donorManager).start(this);
+        new DonorParticleTask(donorManager, combatTagManager).start(this);
+
+        DonorPetManager donorPetManager = new DonorPetManager(this, donorManager, donorPetDao);
+        HallOfFameManager hallOfFameManager = new HallOfFameManager(this, donorManager, hallOfFameDao, hallOfFameMetaDao);
+        hallOfFameManager.initialize();
+        new DonorCombatVisibilityManager(donorManager, combatTagManager, donorNametagManager, donorPetManager).start(this);
 
         playtimeTracker = new PlaytimeTracker(this, statsDao);
         playtimeTracker.start();
@@ -198,9 +214,10 @@ public final class PillageCore extends JavaPlugin {
 
         registerCommands(teamChatService, spawnService, killLogDao, reportLogDao, banLogDao, tpLogDao, tradeLogDao,
                 statsDao, deathLocationDao, staffModeManager, economyManager, rewardManager, eventBoxManager,
-                chatManager, shopManager, donorManager, donorNametagManager);
+                chatManager, shopManager, donorManager, donorNametagManager, donorPetManager, hallOfFameManager);
         registerListeners(teamChatService, killLogDao, statsDao, deathLocationDao, killStreakManager,
-                staffModeManager, eventBoxManager, chatManager, combatTagManager, donorManager, donorNametagManager);
+                staffModeManager, eventBoxManager, chatManager, combatTagManager, donorManager, donorNametagManager,
+                donorPetManager, hallOfFameManager);
 
         getLogger().info("PillageCore 가 활성화되었습니다.");
     }
@@ -212,7 +229,8 @@ public final class PillageCore extends JavaPlugin {
                                    EconomyManager economyManager, RewardManager rewardManager,
                                    EventBoxManager eventBoxManager, ChatManager chatManager,
                                    ShopManager shopManager, DonorManager donorManager,
-                                   DonorNametagManager donorNametagManager) {
+                                   DonorNametagManager donorNametagManager, DonorPetManager donorPetManager,
+                                   HallOfFameManager hallOfFameManager) {
         getCommand("team").setExecutor(new TeamCommand(teamManager, tpManager));
         getCommand("team").setTabCompleter((TeamCommand) getCommand("team").getExecutor());
         getCommand("tc").setExecutor(new TeamChatCommand(teamManager, teamChatService));
@@ -264,8 +282,9 @@ public final class PillageCore extends JavaPlugin {
         getCommand("logs").setExecutor(new LogsCommand(killLogDao, banLogDao, tpLogDao, tradeLogDao));
         getCommand("pillageban").setExecutor(new BanCommand(banLogDao));
 
-        getCommand("donor").setExecutor(new DonorCommand(donorManager, donorNametagManager));
+        getCommand("donor").setExecutor(new DonorCommand(donorManager, donorNametagManager, donorPetManager, hallOfFameManager));
         getCommand("statue").setExecutor(new StatueCommand(donorManager));
+        getCommand("pet").setExecutor(new PetCommand(donorManager, donorPetManager));
     }
 
     private void registerListeners(TeamChatService teamChatService, KillLogDao killLogDao, StatsDao statsDao,
@@ -273,7 +292,8 @@ public final class PillageCore extends JavaPlugin {
                                     StaffModeManager staffModeManager,
                                     EventBoxManager eventBoxManager, ChatManager chatManager,
                                     CombatTagManager combatTagManager, DonorManager donorManager,
-                                    DonorNametagManager donorNametagManager) {
+                                    DonorNametagManager donorNametagManager, DonorPetManager donorPetManager,
+                                    HallOfFameManager hallOfFameManager) {
         var pm = getServer().getPluginManager();
         pm.registerEvents(new FriendlyFireListener(teamManager), this);
         pm.registerEvents(new TeamChatListener(teamManager, teamChatService), this);
@@ -290,7 +310,8 @@ public final class PillageCore extends JavaPlugin {
         pm.registerEvents(new EventBoxListener(eventBoxManager), this);
         pm.registerEvents(new GlobalChatListener(chatManager, teamManager, donorManager), this);
         pm.registerEvents(new CombatTagListener(combatTagManager), this);
-        pm.registerEvents(new DonorPerksListener(this, donorManager, donorNametagManager), this);
+        pm.registerEvents(new DonorPerksListener(this, donorManager, donorNametagManager, donorPetManager), this);
+        pm.registerEvents(new HallOfFameListener(hallOfFameManager), this);
         registerAnticheatListeners(pm);
     }
 

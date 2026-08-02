@@ -45,6 +45,11 @@ public final class DonorNametagManager {
         }
     }
 
+    /** Strips the donor styling from the overhead nametag without touching donor status - used while in combat. */
+    public void hideForCombat(Player player) {
+        team().removeEntry(player.getName());
+    }
+
     public void applyToOnlinePlayers(JavaPlugin plugin) {
         for (Player player : plugin.getServer().getOnlinePlayers()) {
             refresh(player);

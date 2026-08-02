@@ -1,5 +1,6 @@
 package com.mingyu.pillage.donor;
 
+import com.mingyu.pillage.combat.CombatTagManager;
 import org.bukkit.Location;
 import org.bukkit.Particle;
 import org.bukkit.entity.Player;
@@ -9,14 +10,16 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-/** Small trailing particle under donors while they walk around. */
+/** Small trailing particle under donors while they walk around. Paused during combat. */
 public final class DonorParticleTask {
 
     private final DonorManager donorManager;
+    private final CombatTagManager combatTagManager;
     private final Map<UUID, Location> lastLocations = new HashMap<>();
 
-    public DonorParticleTask(DonorManager donorManager) {
+    public DonorParticleTask(DonorManager donorManager, CombatTagManager combatTagManager) {
         this.donorManager = donorManager;
+        this.combatTagManager = combatTagManager;
     }
 
     public void start(JavaPlugin plugin) {
@@ -24,6 +27,7 @@ public final class DonorParticleTask {
             if (donorManager.all().isEmpty()) return;
             for (Player player : plugin.getServer().getOnlinePlayers()) {
                 if (!donorManager.isDonor(player.getUniqueId())) continue;
+                if (combatTagManager.isInCombat(player.getUniqueId())) continue;
 
                 Location current = player.getLocation();
                 Location last = lastLocations.put(player.getUniqueId(), current);

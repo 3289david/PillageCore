@@ -132,6 +132,9 @@ commands:
   statue:
     description: 자신의 동상(아머스탠드) 설치 (후원자 전용)
     usage: /statue
+  pet:
+    description: 후원자 전용 고양이 펫 커스터마이즈 (후원자 전용)
+    usage: /pet <name|variant> <값>
 
 permissions:
   pillage.team.*:

@@ -21,11 +21,14 @@ public final class DonorPerksListener implements Listener {
     private final JavaPlugin plugin;
     private final DonorManager donorManager;
     private final DonorNametagManager nametagManager;
+    private final DonorPetManager petManager;
 
-    public DonorPerksListener(JavaPlugin plugin, DonorManager donorManager, DonorNametagManager nametagManager) {
+    public DonorPerksListener(JavaPlugin plugin, DonorManager donorManager, DonorNametagManager nametagManager,
+                               DonorPetManager petManager) {
         this.plugin = plugin;
         this.donorManager = donorManager;
         this.nametagManager = nametagManager;
+        this.petManager = petManager;
     }
 
     @EventHandler
@@ -33,6 +36,8 @@ public final class DonorPerksListener implements Listener {
         Player player = event.getPlayer();
         nametagManager.refresh(player);
         if (!donorManager.isDonor(player.getUniqueId())) return;
+
+        petManager.spawnFor(player);
 
         Component message = Component.text("✦ ")
                 .append(donorManager.gradientName(player.getName()))
@@ -47,6 +52,7 @@ public final class DonorPerksListener implements Listener {
     @EventHandler
     public void onQuit(PlayerQuitEvent event) {
         Player player = event.getPlayer();
+        petManager.despawnFor(player.getUniqueId());
         if (!donorManager.isDonor(player.getUniqueId())) return;
 
         Component message = Component.text("✦ ")

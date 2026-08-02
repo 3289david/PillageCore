@@ -15,10 +15,15 @@ public final class DonorCommand implements CommandExecutor {
 
     private final DonorManager donorManager;
     private final DonorNametagManager nametagManager;
+    private final DonorPetManager petManager;
+    private final HallOfFameManager hallOfFameManager;
 
-    public DonorCommand(DonorManager donorManager, DonorNametagManager nametagManager) {
+    public DonorCommand(DonorManager donorManager, DonorNametagManager nametagManager,
+                         DonorPetManager petManager, HallOfFameManager hallOfFameManager) {
         this.donorManager = donorManager;
         this.nametagManager = nametagManager;
+        this.petManager = petManager;
+        this.hallOfFameManager = hallOfFameManager;
     }
 
     @Override
@@ -49,16 +54,20 @@ public final class DonorCommand implements CommandExecutor {
                 String badge = args.length >= 3 ? args[2] : null;
                 UUID addedBy = sender instanceof Player p ? p.getUniqueId() : null;
                 donorManager.add(target.getUniqueId(), badge, addedBy);
-                sender.sendMessage(Msg.of("&a" + target.getName() + " 님을 후원자로 등록했습니다."));
+                hallOfFameManager.createStatueFor(target.getUniqueId());
+                sender.sendMessage(Msg.of("&a" + target.getName() + " 님을 후원자로 등록했습니다. 명예의 전당에 동상을 세웠습니다."));
                 Player online = target.getPlayer();
                 if (online != null) {
                     nametagManager.refresh(online);
+                    petManager.spawnFor(online);
                     online.sendMessage(Msg.of("&d&l후원자 등급이 적용되었습니다! 감사합니다."));
                 }
             }
             case "remove" -> {
                 donorManager.remove(target.getUniqueId());
-                sender.sendMessage(Msg.of("&e" + target.getName() + " 님의 후원자 등급을 해제했습니다."));
+                hallOfFameManager.removeStatueFor(target.getUniqueId());
+                petManager.forget(target.getUniqueId());
+                sender.sendMessage(Msg.of("&e" + target.getName() + " 님의 후원자 등급을 해제했습니다. 명예의 전당 동상도 제거했습니다."));
                 Player online = target.getPlayer();
                 if (online != null) {
                     nametagManager.refresh(online);
