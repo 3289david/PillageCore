@@ -82,6 +82,9 @@ public final class InstanceManager {
         gameplayDb.use(HUB_ID);
         teamManager.loadCurrentInstance();
         shopManager.loadCurrentInstance();
+        // Flat worlds let slimes spawn at any light level - clear out whatever generation already
+        // produced. HubSlimeGuardListener stops any more from spawning going forward.
+        hubWorld.getEntitiesByClass(org.bukkit.entity.Slime.class).forEach(org.bukkit.entity.Entity::remove);
 
         for (InstanceInfo info : instanceDao.loadAll()) {
             loadInstanceWorld(info);

@@ -57,6 +57,9 @@ import com.mingyu.pillage.economy.PayCommand;
 import com.mingyu.pillage.economy.WithdrawCommand;
 import com.mingyu.pillage.help.PillageHelpCommand;
 import com.mingyu.pillage.instance.HubCommand;
+import com.mingyu.pillage.instance.HubNpcListener;
+import com.mingyu.pillage.instance.HubNpcManager;
+import com.mingyu.pillage.instance.HubSlimeGuardListener;
 import com.mingyu.pillage.instance.InstanceContextListener;
 import com.mingyu.pillage.instance.InstanceJoinListener;
 import com.mingyu.pillage.instance.InstanceManager;
@@ -216,6 +219,9 @@ public final class PillageCore extends JavaPlugin {
         spawnService.applyMainWorldSpawn();
         hallOfFameManager.initialize(instanceManager.hubWorld());
 
+        HubNpcManager hubNpcManager = new HubNpcManager(this);
+        hubNpcManager.spawnIfMissing(instanceManager.hubSpawn());
+
         playtimeTracker = new PlaytimeTracker(this, statsDao, instanceManager);
         playtimeTracker.start();
 
@@ -243,7 +249,7 @@ public final class PillageCore extends JavaPlugin {
                 chatManager, shopManager, donorManager, donorNametagManager, donorPetManager, hallOfFameManager);
         registerListeners(teamChatService, killLogDao, statsDao, deathLocationDao, killStreakManager,
                 staffModeManager, eventBoxManager, chatManager, combatTagManager, donorManager, donorNametagManager,
-                donorPetManager, hallOfFameManager);
+                donorPetManager, hallOfFameManager, hubNpcManager);
 
         getLogger().info("PillageCore 가 활성화되었습니다.");
     }
@@ -327,12 +333,14 @@ public final class PillageCore extends JavaPlugin {
                                     EventBoxManager eventBoxManager, ChatManager chatManager,
                                     CombatTagManager combatTagManager, DonorManager donorManager,
                                     DonorNametagManager donorNametagManager, DonorPetManager donorPetManager,
-                                    HallOfFameManager hallOfFameManager) {
+                                    HallOfFameManager hallOfFameManager, HubNpcManager hubNpcManager) {
         var pm = getServer().getPluginManager();
         // Registered first, at LOWEST priority internally, so every other listener below sees the
         // correct "current instance" gameplay database already switched in before it runs.
         pm.registerEvents(new InstanceContextListener(instanceManager), this);
         pm.registerEvents(new InstanceJoinListener(instanceManager), this);
+        pm.registerEvents(new HubSlimeGuardListener(instanceManager), this);
+        pm.registerEvents(new HubNpcListener(hubNpcManager, instanceManager, tpManager), this);
 
         pm.registerEvents(new FriendlyFireListener(teamManager), this);
         pm.registerEvents(new TeamChatListener(teamManager, teamChatService), this);
