@@ -28,6 +28,7 @@ import com.mingyu.pillage.data.dao.InstanceDao;
 import com.mingyu.pillage.data.dao.KillLogDao;
 import com.mingyu.pillage.data.dao.LastLocationDao;
 import com.mingyu.pillage.data.dao.PlayerInstanceDao;
+import com.mingyu.pillage.data.dao.PlayerInventoryDao;
 import com.mingyu.pillage.data.dao.ReportLogDao;
 import com.mingyu.pillage.data.dao.RewardDao;
 import com.mingyu.pillage.data.dao.StatsDao;
@@ -65,6 +66,7 @@ import com.mingyu.pillage.instance.InstanceJoinListener;
 import com.mingyu.pillage.instance.InstanceManager;
 import com.mingyu.pillage.instance.MainServerCommand;
 import com.mingyu.pillage.instance.MiniServerCommand;
+import com.mingyu.pillage.instance.PlayerInventoryManager;
 import com.mingyu.pillage.menu.MenuCommand;
 import com.mingyu.pillage.menu.MenuListener;
 import com.mingyu.pillage.menu.MenuService;
@@ -152,6 +154,7 @@ public final class PillageCore extends JavaPlugin {
         RewardDao rewardDao = new RewardDao(gameplayDb);
         EconomyDao economyDao = new EconomyDao(gameplayDb);
         ShopDao shopDao = new ShopDao(gameplayDb);
+        PlayerInventoryDao playerInventoryDao = new PlayerInventoryDao(gameplayDb);
 
         // These stay on the global database - donor perks and moderation history must not reset
         // just because someone created or joined a mini-server.
@@ -211,10 +214,12 @@ public final class PillageCore extends JavaPlugin {
         new DonorCombatVisibilityManager(donorManager, combatTagManager, donorNametagManager, donorPetManager).start(this);
 
         ShopManager shopManager = new ShopManager(shopDao, gameplayDb);
+        PlayerInventoryManager playerInventoryManager = new PlayerInventoryManager(playerInventoryDao);
 
         // Provisions the main server + hub + every existing mini-server (each its own world and
         // its own gameplay database file), and loads team/shop state for each of them.
-        instanceManager = new InstanceManager(this, gameplayDb, instanceDao, playerInstanceDao, teamManager, shopManager);
+        instanceManager = new InstanceManager(this, gameplayDb, instanceDao, playerInstanceDao, teamManager,
+                shopManager, playerInventoryManager);
         instanceManager.initialize();
         spawnService.applyMainWorldSpawn();
         hallOfFameManager.initialize(instanceManager.hubWorld());

@@ -224,6 +224,14 @@ public final class Database {
                 output_amount INTEGER NOT NULL
             );
         """);
+        st.execute("""
+            CREATE TABLE IF NOT EXISTS player_inventory (
+                uuid TEXT PRIMARY KEY,
+                contents TEXT NOT NULL,
+                armor TEXT NOT NULL,
+                offhand TEXT NOT NULL
+            );
+        """);
     }
 
     private void createGlobalSchema(Statement st) throws SQLException {

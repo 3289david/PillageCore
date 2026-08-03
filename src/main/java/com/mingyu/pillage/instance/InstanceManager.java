@@ -45,19 +45,22 @@ public final class InstanceManager {
     private final PlayerInstanceDao playerInstanceDao;
     private final TeamManager teamManager;
     private final ShopManager shopManager;
+    private final PlayerInventoryManager playerInventoryManager;
 
     private final Map<String, InstanceInfo> instancesById = new LinkedHashMap<>();
     private final Map<String, String> instanceIdByWorldName = new LinkedHashMap<>();
     private String mainWorldName;
 
     public InstanceManager(JavaPlugin plugin, Database gameplayDb, InstanceDao instanceDao,
-                            PlayerInstanceDao playerInstanceDao, TeamManager teamManager, ShopManager shopManager) {
+                            PlayerInstanceDao playerInstanceDao, TeamManager teamManager, ShopManager shopManager,
+                            PlayerInventoryManager playerInventoryManager) {
         this.plugin = plugin;
         this.gameplayDb = gameplayDb;
         this.instanceDao = instanceDao;
         this.playerInstanceDao = playerInstanceDao;
         this.teamManager = teamManager;
         this.shopManager = shopManager;
+        this.playerInventoryManager = playerInventoryManager;
     }
 
     public void initialize() {
@@ -212,44 +215,60 @@ public final class InstanceManager {
         }
     }
 
+    /** Saves the inventory under whichever instance is currently active (the "from"), switches
+     *  the database, restores whatever was last saved there (empty, the first time), then
+     *  teleports and records the new instance as current. This is the only place instance
+     *  inventories actually swap - resuming the same instance you were already in (see
+     *  {@link #sendToLastInstanceOrHub}) deliberately skips this so it doesn't churn the save
+     *  for no reason. */
+    private void switchTo(Player player, String toInstanceId, Location destination) {
+        playerInventoryManager.save(player);
+        gameplayDb.use(toInstanceId);
+        playerInventoryManager.restore(player);
+        player.teleport(destination);
+        gameplayDb.use(toInstanceId);
+        playerInstanceDao.set(player.getUniqueId(), toInstanceId);
+    }
+
     public void teleportToHub(Player player) {
-        gameplayDb.use(HUB_ID);
-        player.teleport(hubSpawn());
-        playerInstanceDao.set(player.getUniqueId(), HUB_ID);
+        switchTo(player, HUB_ID, hubSpawn());
     }
 
     public void teleportToMain(Player player) {
-        gameplayDb.use(MAIN_ID);
-        player.teleport(mainSpawn());
-        playerInstanceDao.set(player.getUniqueId(), MAIN_ID);
+        switchTo(player, MAIN_ID, mainSpawn());
     }
 
     public void teleportToInstance(Player player, InstanceInfo info) {
         if (Bukkit.getWorld(info.worldName()) == null) {
             loadInstanceWorld(info);
         }
-        World world = Bukkit.getWorld(info.worldName());
-        gameplayDb.use(info.id());
-        player.teleport(world.getSpawnLocation());
-        playerInstanceDao.set(player.getUniqueId(), info.id());
+        switchTo(player, info.id(), Bukkit.getWorld(info.worldName()).getSpawnLocation());
     }
 
-    /** First-ever join (or a deleted last instance) lands in the hub; otherwise resumes exactly where they left off. */
+    /** First-ever join (or a deleted last instance) lands in the hub with a swapped-in inventory;
+     *  otherwise this is a resume - Bukkit already restored the player's position and inventory
+     *  from disk exactly as they left it, so all that's needed is pointing the gameplay database
+     *  at the right instance. */
     public void sendToLastInstanceOrHub(Player player) {
         String lastId = playerInstanceDao.get(player.getUniqueId());
-        if (lastId == null || HUB_ID.equals(lastId)) {
-            teleportToHub(player);
+        if (lastId == null) {
+            switchTo(player, HUB_ID, hubSpawn());
+            return;
+        }
+        if (HUB_ID.equals(lastId)) {
+            gameplayDb.use(HUB_ID);
             return;
         }
         if (MAIN_ID.equals(lastId)) {
-            teleportToMain(player);
+            gameplayDb.use(MAIN_ID);
             return;
         }
         InstanceInfo info = instancesById.get(lastId);
         if (info == null) {
-            teleportToHub(player);
+            // Their mini-server was deleted while they were offline - fall back to the hub.
+            switchTo(player, HUB_ID, hubSpawn());
             return;
         }
-        teleportToInstance(player, info);
+        gameplayDb.use(lastId);
     }
 }
