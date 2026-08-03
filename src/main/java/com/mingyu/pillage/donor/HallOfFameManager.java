@@ -54,12 +54,14 @@ public final class HallOfFameManager {
         return markerKey;
     }
 
-    public void initialize() {
+    /** The monument always lives in the hub world (the shared lobby every player passes through),
+     *  never in a specific mini-server, so it stays a single global showcase. */
+    public void initialize(World hubWorld) {
         Location saved = metaDao.loadOrigin();
         boolean firstBuild = saved == null;
 
         if (firstBuild) {
-            origin = computeOriginFromSpawnConfig();
+            origin = computeOrigin(hubWorld);
             buildPlatform(origin);
             metaDao.saveOrigin(origin);
             for (UUID uuid : donorManager.all().keySet()) {
@@ -71,16 +73,9 @@ public final class HallOfFameManager {
         }
     }
 
-    private Location computeOriginFromSpawnConfig() {
-        var config = plugin.getConfig();
-        World world = Bukkit.getWorld(config.getString("spawn.world", "world"));
-        if (world == null) {
-            world = Bukkit.getWorlds().get(0);
-        }
-        double x = config.getDouble("spawn.x");
-        double z = config.getDouble("spawn.z");
-        int groundY = world.getHighestBlockYAt((int) Math.floor(x), (int) Math.floor(z));
-        return new Location(world, Math.floor(x), groundY + 1, Math.floor(z));
+    private Location computeOrigin(World world) {
+        int groundY = world.getHighestBlockYAt(0, 0);
+        return new Location(world, 0, groundY + 1, 0);
     }
 
     private String describeLocation(Location loc) {

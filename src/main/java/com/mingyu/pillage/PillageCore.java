@@ -24,8 +24,10 @@ import com.mingyu.pillage.data.dao.BanLogDao;
 import com.mingyu.pillage.data.dao.DeathLocationDao;
 import com.mingyu.pillage.data.dao.EconomyDao;
 import com.mingyu.pillage.data.dao.HomeDao;
+import com.mingyu.pillage.data.dao.InstanceDao;
 import com.mingyu.pillage.data.dao.KillLogDao;
 import com.mingyu.pillage.data.dao.LastLocationDao;
+import com.mingyu.pillage.data.dao.PlayerInstanceDao;
 import com.mingyu.pillage.data.dao.ReportLogDao;
 import com.mingyu.pillage.data.dao.RewardDao;
 import com.mingyu.pillage.data.dao.StatsDao;
@@ -54,6 +56,12 @@ import com.mingyu.pillage.economy.EconomyManager;
 import com.mingyu.pillage.economy.PayCommand;
 import com.mingyu.pillage.economy.WithdrawCommand;
 import com.mingyu.pillage.help.PillageHelpCommand;
+import com.mingyu.pillage.instance.HubCommand;
+import com.mingyu.pillage.instance.InstanceContextListener;
+import com.mingyu.pillage.instance.InstanceJoinListener;
+import com.mingyu.pillage.instance.InstanceManager;
+import com.mingyu.pillage.instance.MainServerCommand;
+import com.mingyu.pillage.instance.MiniServerCommand;
 import com.mingyu.pillage.menu.MenuCommand;
 import com.mingyu.pillage.menu.MenuListener;
 import com.mingyu.pillage.menu.MenuService;
@@ -105,7 +113,9 @@ import java.util.Set;
 
 public final class PillageCore extends JavaPlugin {
 
-    private Database database;
+    private Database gameplayDb;
+    private Database globalDb;
+    private InstanceManager instanceManager;
     private TeamManager teamManager;
     private TpManager tpManager;
     private RaidManager raidManager;
@@ -118,33 +128,44 @@ public final class PillageCore extends JavaPlugin {
     public void onEnable() {
         saveDefaultConfig();
 
-        database = new Database(this);
-        database.connect(getConfig().getString("database.file", "pillage.db"));
+        // Two independent databases: "gameplay" is a pool of one fully-separate SQLite file per
+        // instance (main server, hub, each mini-server) that InstanceManager switches between -
+        // this is what makes a brand-new mini-server start with completely empty teams/economy/
+        // stats/homes. "global" is a single always-on file for things that must survive an
+        // instance switch instead of resetting with it: donor status, ban/report history, and
+        // the instance registry itself.
+        gameplayDb = new Database(this, Database.SchemaKind.GAMEPLAY);
+        globalDb = new Database(this, Database.SchemaKind.GLOBAL);
+        globalDb.connect("global.db");
 
-        TeamDao teamDao = new TeamDao(database);
-        HomeDao homeDao = new HomeDao(database);
-        LastLocationDao lastLocationDao = new LastLocationDao(database);
-        TradeLogDao tradeLogDao = new TradeLogDao(database);
-        KillLogDao killLogDao = new KillLogDao(database);
-        ReportLogDao reportLogDao = new ReportLogDao(database);
-        BanLogDao banLogDao = new BanLogDao(database);
-        TpLogDao tpLogDao = new TpLogDao(database);
-        StatsDao statsDao = new StatsDao(database);
-        DeathLocationDao deathLocationDao = new DeathLocationDao(database);
-        RewardDao rewardDao = new RewardDao(database);
-        EconomyDao economyDao = new EconomyDao(database);
-        ShopDao shopDao = new ShopDao(database);
-        DonorDao donorDao = new DonorDao(database);
-        DonorPetDao donorPetDao = new DonorPetDao(database);
-        HallOfFameDao hallOfFameDao = new HallOfFameDao(database);
-        HallOfFameMetaDao hallOfFameMetaDao = new HallOfFameMetaDao(database);
+        TeamDao teamDao = new TeamDao(gameplayDb);
+        HomeDao homeDao = new HomeDao(gameplayDb);
+        LastLocationDao lastLocationDao = new LastLocationDao(gameplayDb);
+        TradeLogDao tradeLogDao = new TradeLogDao(gameplayDb);
+        KillLogDao killLogDao = new KillLogDao(gameplayDb);
+        TpLogDao tpLogDao = new TpLogDao(gameplayDb);
+        StatsDao statsDao = new StatsDao(gameplayDb);
+        DeathLocationDao deathLocationDao = new DeathLocationDao(gameplayDb);
+        RewardDao rewardDao = new RewardDao(gameplayDb);
+        EconomyDao economyDao = new EconomyDao(gameplayDb);
+        ShopDao shopDao = new ShopDao(gameplayDb);
+
+        // These stay on the global database - donor perks and moderation history must not reset
+        // just because someone created or joined a mini-server.
+        ReportLogDao reportLogDao = new ReportLogDao(globalDb);
+        BanLogDao banLogDao = new BanLogDao(globalDb);
+        DonorDao donorDao = new DonorDao(globalDb);
+        DonorPetDao donorPetDao = new DonorPetDao(globalDb);
+        HallOfFameDao hallOfFameDao = new HallOfFameDao(globalDb);
+        HallOfFameMetaDao hallOfFameMetaDao = new HallOfFameMetaDao(globalDb);
+        InstanceDao instanceDao = new InstanceDao(globalDb);
+        PlayerInstanceDao playerInstanceDao = new PlayerInstanceDao(globalDb);
 
         teamManager = new TeamManager(
-                teamDao,
+                teamDao, gameplayDb,
                 getConfig().getInt("team.default-max-members", 6),
                 getConfig().getInt("team.max-members-hard-cap", 12),
                 getConfig().getBoolean("team.friendly-fire-default", false));
-        teamManager.loadAll();
 
         tpManager = new TpManager(
                 this, homeDao, lastLocationDao,
@@ -155,7 +176,7 @@ public final class PillageCore extends JavaPlugin {
                 getConfig().getDouble("tp.cancel-on-move-threshold", 0.3));
 
         raidManager = new RaidManager(
-                this, teamManager,
+                this, teamManager, gameplayDb,
                 getConfig().getInt("raid.raid-duration-minutes", 15),
                 getConfig().getString("raid.alert-message", "&c기지가 공격받고 있습니다! (%attacker%)"),
                 getConfig().getInt("raid.win-kill-threshold", 3));
@@ -184,18 +205,23 @@ public final class PillageCore extends JavaPlugin {
 
         DonorPetManager donorPetManager = new DonorPetManager(this, donorManager, donorPetDao);
         HallOfFameManager hallOfFameManager = new HallOfFameManager(this, donorManager, hallOfFameDao, hallOfFameMetaDao);
-        hallOfFameManager.initialize();
         new DonorCombatVisibilityManager(donorManager, combatTagManager, donorNametagManager, donorPetManager).start(this);
 
-        playtimeTracker = new PlaytimeTracker(this, statsDao);
-        playtimeTracker.start();
+        ShopManager shopManager = new ShopManager(shopDao, gameplayDb);
 
-        ShopManager shopManager = new ShopManager(shopDao);
-        shopManager.loadAll();
+        // Provisions the main server + hub + every existing mini-server (each its own world and
+        // its own gameplay database file), and loads team/shop state for each of them.
+        instanceManager = new InstanceManager(this, gameplayDb, instanceDao, playerInstanceDao, teamManager, shopManager);
+        instanceManager.initialize();
+        spawnService.applyMainWorldSpawn();
+        hallOfFameManager.initialize(instanceManager.hubWorld());
+
+        playtimeTracker = new PlaytimeTracker(this, statsDao, instanceManager);
+        playtimeTracker.start();
 
         EconomyManager economyManager = new EconomyManager(economyDao);
         RewardManager rewardManager = new RewardManager(
-                this, rewardDao, statsDao, economyManager, playtimeTracker,
+                this, rewardDao, statsDao, economyManager, playtimeTracker, instanceManager,
                 getConfig().getLong("reward.daily-amount", 50),
                 getConfig().getInt("reward.playtime-milestone-hours", 1),
                 getConfig().getLong("reward.playtime-amount", 20));
@@ -254,7 +280,9 @@ public final class PillageCore extends JavaPlugin {
         getCommand("tradedeny").setExecutor(new TradeDenyCommand(tradeManager));
 
         getCommand("menu").setExecutor(new MenuCommand(menuService));
-        getCommand("pillagehelp").setExecutor(new PillageHelpCommand());
+        PillageHelpCommand pillageHelpCommand = new PillageHelpCommand();
+        getCommand("pillagehelp").setExecutor(pillageHelpCommand);
+        getCommand("help").setExecutor(pillageHelpCommand);
 
         getCommand("stats").setExecutor(new StatsCommand(statsDao));
         getCommand("death").setExecutor(new DeathCommand(deathLocationDao, tpManager));
@@ -285,6 +313,12 @@ public final class PillageCore extends JavaPlugin {
         getCommand("donor").setExecutor(new DonorCommand(donorManager, donorNametagManager, donorPetManager, hallOfFameManager));
         getCommand("statue").setExecutor(new StatueCommand(donorManager));
         getCommand("pet").setExecutor(new PetCommand(donorManager, donorPetManager));
+
+        getCommand("hub").setExecutor(new HubCommand(instanceManager, tpManager));
+        getCommand("main").setExecutor(new MainServerCommand(instanceManager, tpManager));
+        MiniServerCommand miniServerCommand = new MiniServerCommand(instanceManager, tpManager);
+        getCommand("mini").setExecutor(miniServerCommand);
+        getCommand("mini").setTabCompleter(miniServerCommand);
     }
 
     private void registerListeners(TeamChatService teamChatService, KillLogDao killLogDao, StatsDao statsDao,
@@ -295,6 +329,11 @@ public final class PillageCore extends JavaPlugin {
                                     DonorNametagManager donorNametagManager, DonorPetManager donorPetManager,
                                     HallOfFameManager hallOfFameManager) {
         var pm = getServer().getPluginManager();
+        // Registered first, at LOWEST priority internally, so every other listener below sees the
+        // correct "current instance" gameplay database already switched in before it runs.
+        pm.registerEvents(new InstanceContextListener(instanceManager), this);
+        pm.registerEvents(new InstanceJoinListener(instanceManager), this);
+
         pm.registerEvents(new FriendlyFireListener(teamManager), this);
         pm.registerEvents(new TeamChatListener(teamManager, teamChatService), this);
         pm.registerEvents(new RaidListener(raidManager, teamManager), this);
@@ -360,8 +399,11 @@ public final class PillageCore extends JavaPlugin {
         if (playtimeTracker != null) {
             playtimeTracker.flushAll();
         }
-        if (database != null) {
-            database.close();
+        if (gameplayDb != null) {
+            gameplayDb.close();
+        }
+        if (globalDb != null) {
+            globalDb.close();
         }
         getLogger().info("PillageCore 가 비활성화되었습니다.");
     }

@@ -83,7 +83,7 @@ public final class TpMenu implements PillageMenu {
         }
         if (slot == SLOT_SPAWN) {
             player.closeInventory();
-            tpManager.requestTeleport(player, menuService.spawnService().spawnLocation());
+            tpManager.requestTeleport(player, menuService.spawnService().spawnLocation(player));
             return;
         }
         if (slot == SLOT_BACK_LOCATION) {

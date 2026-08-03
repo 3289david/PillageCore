@@ -61,15 +61,23 @@ public final class TpManager {
         return pendingTeleports.containsKey(uuid);
     }
 
-    public void requestTeleport(Player player, Location destination) {
+    /** Also used to gate non-TpManager teleports (e.g. switching mini-servers) behind the same
+     *  flying/combat restrictions, so they can't be used as a combat-flee exploit. */
+    public boolean isTeleportBlocked(Player player) {
         if (player.isGliding()) {
             player.sendMessage(Msg.of("&c비행 중에는 텔레포트를 사용할 수 없습니다."));
-            return;
+            return true;
         }
-
         if (combatTagManager != null && combatTagManager.isInCombat(player.getUniqueId())) {
             player.sendMessage(Msg.of("&c전투 중에는 텔레포트를 사용할 수 없습니다. ("
                     + combatTagManager.remainingSeconds(player.getUniqueId()) + "초 남음)"));
+            return true;
+        }
+        return false;
+    }
+
+    public void requestTeleport(Player player, Location destination) {
+        if (isTeleportBlocked(player)) {
             return;
         }
 

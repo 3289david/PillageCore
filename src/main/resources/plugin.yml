@@ -56,6 +56,9 @@ commands:
     description: PillageCore 명령어 도움말 보기
     usage: /pillagehelp [페이지]
     aliases: [phelp, 도움말]
+  help:
+    description: PillageCore 명령어 도움말 보기 (바닐라 /help 대체)
+    usage: /help [페이지]
   stats:
     description: 개인 통계 보기
     usage: /stats [player]
@@ -135,6 +138,15 @@ commands:
   pet:
     description: 후원자 전용 고양이 펫 커스터마이즈 (후원자 전용)
     usage: /pet <name|variant> <값>
+  hub:
+    description: 허브(로비)로 이동
+    usage: /hub
+  main:
+    description: 전체 약탈 서버로 이동
+    usage: /main
+  mini:
+    description: 미니서버 생성/입장/목록/삭제/정보
+    usage: /mini <create|join|list|delete|info> [이름]
 
 permissions:
   pillage.team.*:

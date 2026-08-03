@@ -1,5 +1,6 @@
 package com.mingyu.pillage.raid;
 
+import com.mingyu.pillage.data.Database;
 import com.mingyu.pillage.team.Team;
 import com.mingyu.pillage.team.TeamManager;
 import com.mingyu.pillage.util.Msg;
@@ -12,77 +13,106 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * Team ids are only unique within one instance's own database, so raid state (keyed by raw team
+ * id) is namespaced by {@link Database#currentInstance()} the same way {@link TeamManager} is -
+ * otherwise team #1 in one mini-server would collide with team #1 in another. The scheduled
+ * resolution callback captures its instance id explicitly (rather than reading "current" at fire
+ * time) since by the time it runs, "current" may have moved on to whatever a different player
+ * did in between.
+ */
 public final class RaidManager {
 
     private final JavaPlugin plugin;
     private final TeamManager teamManager;
+    private final Database gameplayDb;
     private final long raidDurationMillis;
     private final String alertMessageTemplate;
     private final int winKillThreshold;
 
-    private final Map<Integer, Long> raidUntil = new HashMap<>();
-    private final Map<Integer, UUID> lastAttacker = new HashMap<>();
-    private final Map<Integer, Integer> attackerTeamId = new HashMap<>();
-    private final Map<Integer, Integer> raidKillCount = new HashMap<>();
+    private final Map<String, Map<Integer, Long>> raidUntil = new HashMap<>();
+    private final Map<String, Map<Integer, UUID>> lastAttacker = new HashMap<>();
+    private final Map<String, Map<Integer, Integer>> attackerTeamId = new HashMap<>();
+    private final Map<String, Map<Integer, Integer>> raidKillCount = new HashMap<>();
 
-    public RaidManager(JavaPlugin plugin, TeamManager teamManager, int raidDurationMinutes,
+    public RaidManager(JavaPlugin plugin, TeamManager teamManager, Database gameplayDb, int raidDurationMinutes,
                         String alertMessageTemplate, int winKillThreshold) {
         this.plugin = plugin;
         this.teamManager = teamManager;
+        this.gameplayDb = gameplayDb;
         this.raidDurationMillis = TimeUnit.MINUTES.toMillis(raidDurationMinutes);
         this.alertMessageTemplate = alertMessageTemplate;
         this.winKillThreshold = winKillThreshold;
     }
 
+    private Map<Integer, Long> untilMap(String instance) {
+        return raidUntil.computeIfAbsent(instance, k -> new HashMap<>());
+    }
+
+    private Map<Integer, UUID> lastAttackerMap(String instance) {
+        return lastAttacker.computeIfAbsent(instance, k -> new HashMap<>());
+    }
+
+    private Map<Integer, Integer> attackerTeamIdMap(String instance) {
+        return attackerTeamId.computeIfAbsent(instance, k -> new HashMap<>());
+    }
+
+    private Map<Integer, Integer> killCountMap(String instance) {
+        return raidKillCount.computeIfAbsent(instance, k -> new HashMap<>());
+    }
+
     /** Call whenever a member of {@code victimTeam} is attacked/killed by a player from another team. */
     public void startOrExtendRaid(Team victimTeam, Player attacker) {
+        String instance = gameplayDb.currentInstance();
         boolean wasActive = isTeamInRaid(victimTeam.id());
-        raidUntil.put(victimTeam.id(), System.currentTimeMillis() + raidDurationMillis);
-        lastAttacker.put(victimTeam.id(), attacker.getUniqueId());
+        untilMap(instance).put(victimTeam.id(), System.currentTimeMillis() + raidDurationMillis);
+        lastAttackerMap(instance).put(victimTeam.id(), attacker.getUniqueId());
 
         Team attackerTeam = teamManager.getTeam(attacker.getUniqueId());
         if (attackerTeam != null) {
-            attackerTeamId.put(victimTeam.id(), attackerTeam.id());
+            attackerTeamIdMap(instance).put(victimTeam.id(), attackerTeam.id());
         }
 
         if (!wasActive) {
             broadcastAlert(victimTeam, attacker);
-            raidKillCount.put(victimTeam.id(), 0);
-            scheduleResolution(victimTeam.id());
+            killCountMap(instance).put(victimTeam.id(), 0);
+            scheduleResolution(instance, victimTeam.id());
         }
     }
 
     /** Call whenever an attacking-team player actually kills a member of the raided team. */
     public void registerRaidKill(Team victimTeam) {
         if (!isTeamInRaid(victimTeam.id())) return;
-        raidKillCount.merge(victimTeam.id(), 1, Integer::sum);
+        killCountMap(gameplayDb.currentInstance()).merge(victimTeam.id(), 1, Integer::sum);
     }
 
-    private void scheduleResolution(int teamId) {
-        Long until = raidUntil.get(teamId);
+    private void scheduleResolution(String instance, int teamId) {
+        Long until = untilMap(instance).get(teamId);
         if (until == null) return;
         long delayTicks = Math.max(1, (until - System.currentTimeMillis()) / 50);
         plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
-            Long stillUntil = raidUntil.get(teamId);
+            Long stillUntil = untilMap(instance).get(teamId);
             if (stillUntil == null) return;
             if (System.currentTimeMillis() < stillUntil) {
                 // raid got extended by further attacks since this task was scheduled - reschedule
-                scheduleResolution(teamId);
+                scheduleResolution(instance, teamId);
                 return;
             }
-            resolveRaid(teamId);
+            gameplayDb.use(instance);
+            resolveRaid(instance, teamId);
         }, delayTicks);
     }
 
-    private void resolveRaid(int teamId) {
+    private void resolveRaid(String instance, int teamId) {
+        gameplayDb.use(instance);
         Team victimTeam = teamManager.allTeams().stream().filter(t -> t.id() == teamId).findFirst().orElse(null);
-        int kills = raidKillCount.getOrDefault(teamId, 0);
-        Integer atkTeamId = attackerTeamId.get(teamId);
+        int kills = killCountMap(instance).getOrDefault(teamId, 0);
+        Integer atkTeamId = attackerTeamIdMap(instance).get(teamId);
 
-        raidUntil.remove(teamId);
-        raidKillCount.remove(teamId);
-        lastAttacker.remove(teamId);
-        attackerTeamId.remove(teamId);
+        untilMap(instance).remove(teamId);
+        killCountMap(instance).remove(teamId);
+        lastAttackerMap(instance).remove(teamId);
+        attackerTeamIdMap(instance).remove(teamId);
 
         if (victimTeam == null) return;
 
@@ -120,12 +150,12 @@ public final class RaidManager {
     }
 
     public boolean isTeamInRaid(int teamId) {
-        Long until = raidUntil.get(teamId);
+        Long until = untilMap(gameplayDb.currentInstance()).get(teamId);
         return until != null && until > System.currentTimeMillis();
     }
 
     public long remainingSeconds(int teamId) {
-        Long until = raidUntil.get(teamId);
+        Long until = untilMap(gameplayDb.currentInstance()).get(teamId);
         if (until == null) return 0;
         return Math.max(0, (until - System.currentTimeMillis()) / 1000);
     }

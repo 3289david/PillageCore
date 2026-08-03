@@ -1,5 +1,6 @@
 package com.mingyu.pillage.team;
 
+import com.mingyu.pillage.data.Database;
 import com.mingyu.pillage.data.dao.TeamDao;
 import org.bukkit.entity.Player;
 
@@ -12,48 +13,76 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * Teams are per-instance data (a team created in one mini-server must never be visible from
+ * another), but every mini-server shares the same {@code TeamDao} - it's stateless and always
+ * queries whichever gameplay database is currently active. This manager is the one that caches,
+ * so its caches are namespaced by {@link Database#currentInstance()} instead: every lookup/write
+ * transparently operates on "whichever instance the caller is currently in" without any of the
+ * ~15 call sites (commands, listeners, menus) needing to know instances exist at all.
+ */
 public final class TeamManager {
 
     private final TeamDao teamDao;
+    private final Database gameplayDb;
     private final int defaultMaxMembers;
     private final int maxMembersHardCap;
     private final boolean friendlyFireDefault;
 
-    private final Map<Integer, Team> teamsById = new HashMap<>();
-    private final Map<UUID, Integer> teamIdByMember = new HashMap<>();
-    private final Map<String, Integer> teamIdByNameLower = new HashMap<>();
+    private final Map<String, Map<Integer, Team>> teamsById = new HashMap<>();
+    private final Map<String, Map<UUID, Integer>> teamIdByMember = new HashMap<>();
+    private final Map<String, Map<String, Integer>> teamIdByNameLower = new HashMap<>();
+    // Invites/chat-toggle are short-lived session state, not persisted progress - left un-namespaced.
     private final Map<UUID, TeamInvite> pendingInvites = new HashMap<>();
     private final Map<UUID, Boolean> teamChatToggle = new HashMap<>();
 
-    public TeamManager(TeamDao teamDao, int defaultMaxMembers, int maxMembersHardCap,
+    public TeamManager(TeamDao teamDao, Database gameplayDb, int defaultMaxMembers, int maxMembersHardCap,
                         boolean friendlyFireDefault) {
         this.teamDao = teamDao;
+        this.gameplayDb = gameplayDb;
         this.defaultMaxMembers = defaultMaxMembers;
         this.maxMembersHardCap = maxMembersHardCap;
         this.friendlyFireDefault = friendlyFireDefault;
     }
 
-    public void loadAll() {
+    private Map<Integer, Team> teamsById() {
+        return teamsById.computeIfAbsent(gameplayDb.currentInstance(), k -> new HashMap<>());
+    }
+
+    private Map<UUID, Integer> teamIdByMember() {
+        return teamIdByMember.computeIfAbsent(gameplayDb.currentInstance(), k -> new HashMap<>());
+    }
+
+    private Map<String, Integer> teamIdByNameLower() {
+        return teamIdByNameLower.computeIfAbsent(gameplayDb.currentInstance(), k -> new HashMap<>());
+    }
+
+    /** Loads every team from whichever instance's database is currently active. Call once per
+     *  instance, right after that instance's connection is opened. */
+    public void loadCurrentInstance() {
+        teamsById().clear();
+        teamIdByMember().clear();
+        teamIdByNameLower().clear();
         for (Team team : teamDao.loadAll()) {
             index(team);
         }
     }
 
     private void index(Team team) {
-        teamsById.put(team.id(), team);
-        teamIdByNameLower.put(team.name().toLowerCase(), team.id());
+        teamsById().put(team.id(), team);
+        teamIdByNameLower().put(team.name().toLowerCase(), team.id());
         for (UUID member : team.members().keySet()) {
-            teamIdByMember.put(member, team.id());
+            teamIdByMember().put(member, team.id());
         }
     }
 
     public enum CreateResult { OK, NAME_TAKEN, ALREADY_IN_TEAM }
 
     public CreateResult createTeam(String name, Player leader) {
-        if (teamIdByMember.containsKey(leader.getUniqueId())) {
+        if (teamIdByMember().containsKey(leader.getUniqueId())) {
             return CreateResult.ALREADY_IN_TEAM;
         }
-        if (teamIdByNameLower.containsKey(name.toLowerCase())) {
+        if (teamIdByNameLower().containsKey(name.toLowerCase())) {
             return CreateResult.NAME_TAKEN;
         }
         Team team = teamDao.createTeam(name, leader.getUniqueId(), defaultMaxMembers);
@@ -69,7 +98,7 @@ public final class TeamManager {
         if (!team.isLeader(inviter.getUniqueId())) {
             return InviteResult.NOT_LEADER;
         }
-        if (teamIdByMember.containsKey(target.getUniqueId())) {
+        if (teamIdByMember().containsKey(target.getUniqueId())) {
             return InviteResult.TARGET_ALREADY_IN_TEAM;
         }
         if (team.size() >= team.maxMembers()) {
@@ -100,14 +129,14 @@ public final class TeamManager {
     public enum JoinResult { OK, NO_INVITE, TEAM_FULL, ALREADY_IN_TEAM }
 
     public JoinResult join(Player player) {
-        if (teamIdByMember.containsKey(player.getUniqueId())) {
+        if (teamIdByMember().containsKey(player.getUniqueId())) {
             return JoinResult.ALREADY_IN_TEAM;
         }
         Optional<TeamInvite> inviteOpt = pendingInvite(player.getUniqueId());
         if (inviteOpt.isEmpty()) {
             return JoinResult.NO_INVITE;
         }
-        Team team = teamsById.get(inviteOpt.get().teamId());
+        Team team = teamsById().get(inviteOpt.get().teamId());
         if (team == null) {
             return JoinResult.NO_INVITE;
         }
@@ -115,7 +144,7 @@ public final class TeamManager {
             return JoinResult.TEAM_FULL;
         }
         team.members().put(player.getUniqueId(), TeamRole.MEMBER);
-        teamIdByMember.put(player.getUniqueId(), team.id());
+        teamIdByMember().put(player.getUniqueId(), team.id());
         teamDao.addMember(team.id(), player.getUniqueId(), TeamRole.MEMBER);
         pendingInvites.remove(player.getUniqueId());
         return JoinResult.OK;
@@ -132,7 +161,7 @@ public final class TeamManager {
             return LeaveResult.LEADER_MUST_DISBAND;
         }
         team.members().remove(player.getUniqueId());
-        teamIdByMember.remove(player.getUniqueId());
+        teamIdByMember().remove(player.getUniqueId());
         teamDao.removeMember(player.getUniqueId());
         return LeaveResult.OK;
     }
@@ -150,7 +179,7 @@ public final class TeamManager {
             return KickResult.TARGET_NOT_IN_TEAM;
         }
         team.members().remove(target);
-        teamIdByMember.remove(target);
+        teamIdByMember().remove(target);
         teamDao.removeMember(target);
         return KickResult.OK;
     }
@@ -160,27 +189,27 @@ public final class TeamManager {
             return false;
         }
         for (UUID member : new ArrayList<>(team.members().keySet())) {
-            teamIdByMember.remove(member);
+            teamIdByMember().remove(member);
         }
-        teamsById.remove(team.id());
-        teamIdByNameLower.remove(team.name().toLowerCase());
+        teamsById().remove(team.id());
+        teamIdByNameLower().remove(team.name().toLowerCase());
         teamDao.deleteTeam(team.id());
         return true;
     }
 
     public Team getTeam(UUID uuid) {
-        Integer id = teamIdByMember.get(uuid);
-        return id == null ? null : teamsById.get(id);
+        Integer id = teamIdByMember().get(uuid);
+        return id == null ? null : teamsById().get(id);
     }
 
     public Team getTeamByName(String name) {
-        Integer id = teamIdByNameLower.get(name.toLowerCase());
-        return id == null ? null : teamsById.get(id);
+        Integer id = teamIdByNameLower().get(name.toLowerCase());
+        return id == null ? null : teamsById().get(id);
     }
 
     public boolean isSameTeam(UUID a, UUID b) {
-        Integer teamA = teamIdByMember.get(a);
-        Integer teamB = teamIdByMember.get(b);
+        Integer teamA = teamIdByMember().get(a);
+        Integer teamB = teamIdByMember().get(b);
         return teamA != null && teamA.equals(teamB);
     }
 
@@ -234,20 +263,20 @@ public final class TeamManager {
     }
 
     public List<Team> topByKills(int limit) {
-        return teamsById.values().stream()
+        return teamsById().values().stream()
                 .sorted(Comparator.comparingInt(Team::kills).reversed())
                 .limit(limit)
                 .toList();
     }
 
     public List<Team> topByLootScore(int limit) {
-        return teamsById.values().stream()
+        return teamsById().values().stream()
                 .sorted(Comparator.comparingInt(Team::lootScore).reversed())
                 .limit(limit)
                 .toList();
     }
 
     public List<Team> allTeams() {
-        return new ArrayList<>(teamsById.values());
+        return new ArrayList<>(teamsById().values());
     }
 }

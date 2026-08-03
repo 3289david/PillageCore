@@ -3,6 +3,7 @@ package com.mingyu.pillage.reward;
 import com.mingyu.pillage.data.dao.RewardDao;
 import com.mingyu.pillage.data.dao.StatsDao;
 import com.mingyu.pillage.economy.EconomyManager;
+import com.mingyu.pillage.instance.InstanceManager;
 import com.mingyu.pillage.stats.PlaytimeTracker;
 import com.mingyu.pillage.util.Msg;
 import org.bukkit.Material;
@@ -19,26 +20,31 @@ public final class RewardManager {
     private final StatsDao statsDao;
     private final EconomyManager economyManager;
     private final PlaytimeTracker playtimeTracker;
+    private final InstanceManager instanceManager;
     private final long dailyRewardAmount;
     private final int playtimeMilestoneHours;
     private final long playtimeRewardAmount;
 
     public RewardManager(JavaPlugin plugin, RewardDao rewardDao, StatsDao statsDao, EconomyManager economyManager,
-                          PlaytimeTracker playtimeTracker, long dailyRewardAmount,
+                          PlaytimeTracker playtimeTracker, InstanceManager instanceManager, long dailyRewardAmount,
                           int playtimeMilestoneHours, long playtimeRewardAmount) {
         this.plugin = plugin;
         this.rewardDao = rewardDao;
         this.statsDao = statsDao;
         this.economyManager = economyManager;
         this.playtimeTracker = playtimeTracker;
+        this.instanceManager = instanceManager;
         this.dailyRewardAmount = dailyRewardAmount;
         this.playtimeMilestoneHours = playtimeMilestoneHours;
         this.playtimeRewardAmount = playtimeRewardAmount;
     }
 
     public void startPlaytimeCheck() {
+        // Each online player may be in a different instance, so the gameplay database has to be
+        // switched per-player here rather than relying on ambient "current instance" state.
         plugin.getServer().getScheduler().runTaskTimer(plugin, () -> {
             for (Player player : plugin.getServer().getOnlinePlayers()) {
+                instanceManager.enter(player);
                 checkPlaytimeMilestone(player);
             }
         }, 20L * 60, 20L * 60);

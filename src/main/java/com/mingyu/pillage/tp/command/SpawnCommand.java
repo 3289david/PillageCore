@@ -24,7 +24,7 @@ public final class SpawnCommand implements CommandExecutor {
             sender.sendMessage("플레이어만 사용할 수 있는 명령어입니다.");
             return true;
         }
-        tpManager.requestTeleport(player, spawnService.spawnLocation());
+        tpManager.requestTeleport(player, spawnService.spawnLocation(player));
         return true;
     }
 }

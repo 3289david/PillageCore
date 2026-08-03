@@ -1,41 +1,55 @@
 package com.mingyu.pillage.shop;
 
+import com.mingyu.pillage.data.Database;
 import com.mingyu.pillage.data.dao.ShopDao;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
+/** Shop offers are per-instance (each mini-server's admin configures their own), namespaced by
+ *  {@link Database#currentInstance()} the same way {@link com.mingyu.pillage.team.TeamManager} is. */
 public final class ShopManager {
 
     private final ShopDao shopDao;
-    private final List<ShopOffer> offers = new ArrayList<>();
+    private final Database gameplayDb;
+    private final Map<String, List<ShopOffer>> offersByInstance = new HashMap<>();
 
-    public ShopManager(ShopDao shopDao) {
+    public ShopManager(ShopDao shopDao, Database gameplayDb) {
         this.shopDao = shopDao;
+        this.gameplayDb = gameplayDb;
     }
 
-    public void loadAll() {
+    private List<ShopOffer> current() {
+        return offersByInstance.computeIfAbsent(gameplayDb.currentInstance(), k -> new ArrayList<>());
+    }
+
+    /** Loads offers from whichever instance's database is currently active. Call once per
+     *  instance, right after that instance's connection is opened. */
+    public void loadCurrentInstance() {
+        List<ShopOffer> offers = current();
         offers.clear();
         offers.addAll(shopDao.loadAll());
     }
 
     public List<ShopOffer> offers() {
-        return offers;
+        return current();
     }
 
     public ShopOffer addOffer(Material inputMaterial, int inputAmount, Material outputMaterial, int outputAmount) {
         ShopOffer offer = shopDao.addOffer(inputMaterial, inputAmount, outputMaterial, outputAmount);
-        offers.add(offer);
+        current().add(offer);
         return offer;
     }
 
     public enum RemoveResult { OK, NOT_FOUND }
 
     public RemoveResult removeOffer(int id) {
-        if (!offers.removeIf(o -> o.id() == id)) {
+        if (!current().removeIf(o -> o.id() == id)) {
             return RemoveResult.NOT_FOUND;
         }
         shopDao.removeOffer(id);
