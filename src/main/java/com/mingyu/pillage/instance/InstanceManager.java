@@ -119,11 +119,22 @@ public final class InstanceManager {
             new WorldCreator(info.worldName()).environment(World.Environment.NORMAL).createWorld();
         }
         gameplayDb.open(info.id(), "instance-" + info.id() + ".db");
-        gameplayDb.use(info.id());
-        teamManager.loadCurrentInstance();
-        shopManager.loadCurrentInstance();
+        loadTeamAndShopFor(info.id());
         instancesById.put(info.id(), info);
         instanceIdByWorldName.put(info.worldName(), info.id());
+    }
+
+    /** Loads team/shop state for one instance without disturbing whatever instance the gameplay
+     *  database was already pointed at - callers like {@link #teleportToInstance} rely on
+     *  "current" still meaning "the instance the player is switching FROM" once this returns. */
+    private void loadTeamAndShopFor(String instanceId) {
+        String previous = gameplayDb.currentInstance();
+        gameplayDb.use(instanceId);
+        teamManager.loadCurrentInstance();
+        shopManager.loadCurrentInstance();
+        if (previous != null) {
+            gameplayDb.use(previous);
+        }
     }
 
     public String resolveInstanceId(World world) {
@@ -185,9 +196,7 @@ public final class InstanceManager {
         long now = System.currentTimeMillis();
         instanceDao.insert(id, name, creator.getUniqueId(), worldName, now);
         gameplayDb.open(id, "instance-" + id + ".db");
-        gameplayDb.use(id);
-        teamManager.loadCurrentInstance();
-        shopManager.loadCurrentInstance();
+        loadTeamAndShopFor(id);
 
         InstanceInfo info = new InstanceInfo(id, name, creator.getUniqueId(), worldName, now);
         instancesById.put(id, info);
