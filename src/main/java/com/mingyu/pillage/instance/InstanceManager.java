@@ -251,7 +251,14 @@ public final class InstanceManager {
         gameplayDb.use(toInstanceId);
         playerInventoryManager.restore(player);
         Location destination = playerPositionDao.load(player.getUniqueId());
-        player.teleport(destination != null ? destination : fallbackSpawn);
+        // A saved position table only ever legitimately holds locations in that instance's own
+        // world - if it doesn't match (a corrupted leftover row from an earlier bug, or the
+        // instance's world having been recreated), ignore it rather than teleporting the player
+        // into whatever world it happens to point at.
+        if (destination == null || !destination.getWorld().equals(fallbackSpawn.getWorld())) {
+            destination = fallbackSpawn;
+        }
+        player.teleport(destination);
         gameplayDb.use(toInstanceId);
         playerInstanceDao.set(player.getUniqueId(), toInstanceId);
     }
@@ -274,19 +281,32 @@ public final class InstanceManager {
     /** First-ever join (or a deleted last instance) lands in the hub with a swapped-in inventory;
      *  otherwise this is a resume - Bukkit already restored the player's position and inventory
      *  from disk exactly as they left it, so all that's needed is pointing the gameplay database
-     *  at the right instance. */
+     *  at the right instance - but only if the player is actually physically standing in that
+     *  instance's world. If the recorded instance doesn't match reality (state can drift out of
+     *  sync from a bug, or from editing the database by hand), this forces a real switchTo() to
+     *  reconcile everything instead of silently trusting a stale record. */
     public void sendToLastInstanceOrHub(Player player) {
         String lastId = playerInstanceDao.get(player.getUniqueId());
         if (lastId == null) {
             switchTo(player, HUB_ID, hubSpawn());
             return;
         }
+
+        String actualId = resolveInstanceId(player.getWorld());
         if (HUB_ID.equals(lastId)) {
-            gameplayDb.use(HUB_ID);
+            if (actualId.equals(HUB_ID)) {
+                gameplayDb.use(HUB_ID);
+            } else {
+                switchTo(player, HUB_ID, hubSpawn());
+            }
             return;
         }
         if (MAIN_ID.equals(lastId)) {
-            gameplayDb.use(MAIN_ID);
+            if (actualId.equals(MAIN_ID)) {
+                gameplayDb.use(MAIN_ID);
+            } else {
+                switchTo(player, MAIN_ID, mainSpawn());
+            }
             return;
         }
         InstanceInfo info = instancesById.get(lastId);
@@ -295,6 +315,10 @@ public final class InstanceManager {
             switchTo(player, HUB_ID, hubSpawn());
             return;
         }
-        gameplayDb.use(lastId);
+        if (actualId.equals(lastId)) {
+            gameplayDb.use(lastId);
+        } else {
+            switchTo(player, lastId, Bukkit.getWorld(info.worldName()).getSpawnLocation());
+        }
     }
 }
