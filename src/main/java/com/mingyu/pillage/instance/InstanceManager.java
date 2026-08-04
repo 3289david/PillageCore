@@ -52,6 +52,7 @@ public final class InstanceManager {
     private final ShopManager shopManager;
     private final PlayerInventoryManager playerInventoryManager;
     private final PlayerPositionDao playerPositionDao;
+    private final PlayerVitalsManager playerVitalsManager;
 
     private final Map<String, InstanceInfo> instancesById = new LinkedHashMap<>();
     private final Map<String, String> instanceIdByWorldName = new LinkedHashMap<>();
@@ -59,7 +60,8 @@ public final class InstanceManager {
 
     public InstanceManager(JavaPlugin plugin, Database gameplayDb, InstanceDao instanceDao,
                             PlayerInstanceDao playerInstanceDao, TeamManager teamManager, ShopManager shopManager,
-                            PlayerInventoryManager playerInventoryManager, PlayerPositionDao playerPositionDao) {
+                            PlayerInventoryManager playerInventoryManager, PlayerPositionDao playerPositionDao,
+                            PlayerVitalsManager playerVitalsManager) {
         this.plugin = plugin;
         this.gameplayDb = gameplayDb;
         this.instanceDao = instanceDao;
@@ -68,6 +70,7 @@ public final class InstanceManager {
         this.shopManager = shopManager;
         this.playerInventoryManager = playerInventoryManager;
         this.playerPositionDao = playerPositionDao;
+        this.playerVitalsManager = playerVitalsManager;
     }
 
     public void initialize() {
@@ -248,8 +251,10 @@ public final class InstanceManager {
     private void switchTo(Player player, String toInstanceId, Location fallbackSpawn) {
         playerInventoryManager.save(player);
         playerPositionDao.save(player);
+        playerVitalsManager.save(player);
         gameplayDb.use(toInstanceId);
         playerInventoryManager.restore(player);
+        playerVitalsManager.restore(player);
         Location destination = playerPositionDao.load(player.getUniqueId());
         // A saved position table only ever legitimately holds locations in that instance's own
         // world - if it doesn't match (a corrupted leftover row from an earlier bug, or the

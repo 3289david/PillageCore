@@ -240,6 +240,15 @@ public final class Database {
                 yaw REAL NOT NULL, pitch REAL NOT NULL
             );
         """);
+        st.execute("""
+            CREATE TABLE IF NOT EXISTS player_vitals (
+                uuid TEXT PRIMARY KEY,
+                health REAL NOT NULL,
+                food_level INTEGER NOT NULL,
+                saturation REAL NOT NULL,
+                exhaustion REAL NOT NULL
+            );
+        """);
     }
 
     private void createGlobalSchema(Statement st) throws SQLException {
