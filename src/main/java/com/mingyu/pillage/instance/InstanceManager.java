@@ -6,11 +6,15 @@ import com.mingyu.pillage.data.dao.PlayerInstanceDao;
 import com.mingyu.pillage.shop.ShopManager;
 import com.mingyu.pillage.team.TeamManager;
 import org.bukkit.Bukkit;
+import org.bukkit.GameRule;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.WorldCreator;
 import org.bukkit.WorldType;
+import org.bukkit.entity.Animals;
+import org.bukkit.entity.Monster;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.Slime;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
@@ -85,9 +89,16 @@ public final class InstanceManager {
         gameplayDb.use(HUB_ID);
         teamManager.loadCurrentInstance();
         shopManager.loadCurrentInstance();
-        // Flat worlds let slimes spawn at any light level - clear out whatever generation already
-        // produced. HubSlimeGuardListener stops any more from spawning going forward.
-        hubWorld.getEntitiesByClass(org.bukkit.entity.Slime.class).forEach(org.bukkit.entity.Entity::remove);
+
+        // The hub is a lobby, not a place to fight monsters or wrangle animals: always daytime,
+        // no natural mob spawning at all (HubMobGuardListener backs this up event-by-event too,
+        // since setSpawnFlags alone doesn't stop every edge case like flat-world slimes).
+        hubWorld.setGameRule(GameRule.DO_DAYLIGHT_CYCLE, false);
+        hubWorld.setTime(6000);
+        hubWorld.setSpawnFlags(false, false);
+        hubWorld.getEntitiesByClass(Monster.class).forEach(org.bukkit.entity.Entity::remove);
+        hubWorld.getEntitiesByClass(Slime.class).forEach(org.bukkit.entity.Entity::remove);
+        hubWorld.getEntitiesByClass(Animals.class).forEach(org.bukkit.entity.Entity::remove);
 
         for (InstanceInfo info : instanceDao.loadAll()) {
             loadInstanceWorld(info);

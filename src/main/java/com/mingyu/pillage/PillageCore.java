@@ -58,9 +58,9 @@ import com.mingyu.pillage.economy.PayCommand;
 import com.mingyu.pillage.economy.WithdrawCommand;
 import com.mingyu.pillage.help.PillageHelpCommand;
 import com.mingyu.pillage.instance.HubCommand;
+import com.mingyu.pillage.instance.HubMobGuardListener;
 import com.mingyu.pillage.instance.HubNpcListener;
 import com.mingyu.pillage.instance.HubNpcManager;
-import com.mingyu.pillage.instance.HubSlimeGuardListener;
 import com.mingyu.pillage.instance.InstanceContextListener;
 import com.mingyu.pillage.instance.InstanceJoinListener;
 import com.mingyu.pillage.instance.InstanceManager;
@@ -344,7 +344,7 @@ public final class PillageCore extends JavaPlugin {
         // correct "current instance" gameplay database already switched in before it runs.
         pm.registerEvents(new InstanceContextListener(instanceManager), this);
         pm.registerEvents(new InstanceJoinListener(instanceManager), this);
-        pm.registerEvents(new HubSlimeGuardListener(instanceManager), this);
+        pm.registerEvents(new HubMobGuardListener(instanceManager), this);
         pm.registerEvents(new HubNpcListener(hubNpcManager, instanceManager, tpManager), this);
 
         pm.registerEvents(new FriendlyFireListener(teamManager), this);
