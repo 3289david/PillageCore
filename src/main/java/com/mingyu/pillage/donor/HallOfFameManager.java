@@ -264,16 +264,4 @@ public final class HallOfFameManager {
         if (entity.getType() != EntityType.ARMOR_STAND) return false;
         return entity.getPersistentDataContainer().has(markerKey, PersistentDataType.STRING);
     }
-
-    /** Whether a location falls inside the monument's protected footprint (platform + statues). */
-    public boolean isWithinHallOfFame(Location location) {
-        if (origin == null || location.getWorld() != origin.getWorld()) return false;
-        // +1 margin on width/depth to also cover the roof's eave overhang.
-        int halfWidth = (ROW_LENGTH * SLOT_SPACING_X) / 2 + PLATFORM_MARGIN + 1;
-        int depth = MAX_ROWS * ROW_SPACING_Z + PLATFORM_MARGIN + 1;
-        int dx = location.getBlockX() - origin.getBlockX();
-        int dz = location.getBlockZ() - origin.getBlockZ();
-        int dy = location.getBlockY() - (origin.getBlockY() - 1);
-        return dx >= -halfWidth && dx <= halfWidth && dz >= -2 && dz <= depth && dy >= 0 && dy <= (1 + PILLAR_HEIGHT);
-    }
 }

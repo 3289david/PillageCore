@@ -58,6 +58,7 @@ import com.mingyu.pillage.economy.EconomyManager;
 import com.mingyu.pillage.economy.PayCommand;
 import com.mingyu.pillage.economy.WithdrawCommand;
 import com.mingyu.pillage.help.PillageHelpCommand;
+import com.mingyu.pillage.instance.HubBuildGuardListener;
 import com.mingyu.pillage.instance.HubCommand;
 import com.mingyu.pillage.instance.HubMobGuardListener;
 import com.mingyu.pillage.instance.HubNpcListener;
@@ -347,6 +348,7 @@ public final class PillageCore extends JavaPlugin {
         pm.registerEvents(new InstanceContextListener(instanceManager), this);
         pm.registerEvents(new InstanceJoinListener(instanceManager), this);
         pm.registerEvents(new HubMobGuardListener(instanceManager), this);
+        pm.registerEvents(new HubBuildGuardListener(instanceManager), this);
         pm.registerEvents(new HubNpcListener(this, hubNpcManager, instanceManager, tpManager), this);
 
         pm.registerEvents(new FriendlyFireListener(teamManager), this);
