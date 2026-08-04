@@ -3,6 +3,7 @@ package com.mingyu.pillage.instance;
 import com.mingyu.pillage.data.Database;
 import com.mingyu.pillage.data.dao.InstanceDao;
 import com.mingyu.pillage.data.dao.PlayerInstanceDao;
+import com.mingyu.pillage.data.dao.PlayerPositionDao;
 import com.mingyu.pillage.shop.ShopManager;
 import com.mingyu.pillage.team.TeamManager;
 import org.bukkit.Bukkit;
@@ -50,6 +51,7 @@ public final class InstanceManager {
     private final TeamManager teamManager;
     private final ShopManager shopManager;
     private final PlayerInventoryManager playerInventoryManager;
+    private final PlayerPositionDao playerPositionDao;
 
     private final Map<String, InstanceInfo> instancesById = new LinkedHashMap<>();
     private final Map<String, String> instanceIdByWorldName = new LinkedHashMap<>();
@@ -57,7 +59,7 @@ public final class InstanceManager {
 
     public InstanceManager(JavaPlugin plugin, Database gameplayDb, InstanceDao instanceDao,
                             PlayerInstanceDao playerInstanceDao, TeamManager teamManager, ShopManager shopManager,
-                            PlayerInventoryManager playerInventoryManager) {
+                            PlayerInventoryManager playerInventoryManager, PlayerPositionDao playerPositionDao) {
         this.plugin = plugin;
         this.gameplayDb = gameplayDb;
         this.instanceDao = instanceDao;
@@ -65,6 +67,7 @@ public final class InstanceManager {
         this.teamManager = teamManager;
         this.shopManager = shopManager;
         this.playerInventoryManager = playerInventoryManager;
+        this.playerPositionDao = playerPositionDao;
     }
 
     public void initialize() {
@@ -226,17 +229,20 @@ public final class InstanceManager {
         }
     }
 
-    /** Saves the inventory under whichever instance is currently active (the "from"), switches
-     *  the database, restores whatever was last saved there (empty, the first time), then
-     *  teleports and records the new instance as current. This is the only place instance
-     *  inventories actually swap - resuming the same instance you were already in (see
+    /** Saves the inventory + exact position under whichever instance is currently active (the
+     *  "from"), switches the database, restores whatever was last saved for the instance being
+     *  entered - the exact spot they left it at, or {@code fallbackSpawn} the first time - then
+     *  teleports and records the new instance as current. This is the only place instance state
+     *  actually swaps - resuming the same instance you were already in (see
      *  {@link #sendToLastInstanceOrHub}) deliberately skips this so it doesn't churn the save
-     *  for no reason. */
-    private void switchTo(Player player, String toInstanceId, Location destination) {
+     *  for no reason (Bukkit already restored that exact position/inventory from disk untouched). */
+    private void switchTo(Player player, String toInstanceId, Location fallbackSpawn) {
         playerInventoryManager.save(player);
+        playerPositionDao.save(player);
         gameplayDb.use(toInstanceId);
         playerInventoryManager.restore(player);
-        player.teleport(destination);
+        Location destination = playerPositionDao.load(player.getUniqueId());
+        player.teleport(destination != null ? destination : fallbackSpawn);
         gameplayDb.use(toInstanceId);
         playerInstanceDao.set(player.getUniqueId(), toInstanceId);
     }

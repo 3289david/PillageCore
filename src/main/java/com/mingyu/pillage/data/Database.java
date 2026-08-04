@@ -232,6 +232,14 @@ public final class Database {
                 offhand TEXT NOT NULL
             );
         """);
+        st.execute("""
+            CREATE TABLE IF NOT EXISTS player_position (
+                uuid TEXT PRIMARY KEY,
+                world TEXT NOT NULL,
+                x REAL NOT NULL, y REAL NOT NULL, z REAL NOT NULL,
+                yaw REAL NOT NULL, pitch REAL NOT NULL
+            );
+        """);
     }
 
     private void createGlobalSchema(Statement st) throws SQLException {

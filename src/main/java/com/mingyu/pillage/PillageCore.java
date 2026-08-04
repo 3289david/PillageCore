@@ -29,6 +29,7 @@ import com.mingyu.pillage.data.dao.KillLogDao;
 import com.mingyu.pillage.data.dao.LastLocationDao;
 import com.mingyu.pillage.data.dao.PlayerInstanceDao;
 import com.mingyu.pillage.data.dao.PlayerInventoryDao;
+import com.mingyu.pillage.data.dao.PlayerPositionDao;
 import com.mingyu.pillage.data.dao.ReportLogDao;
 import com.mingyu.pillage.data.dao.RewardDao;
 import com.mingyu.pillage.data.dao.StatsDao;
@@ -155,6 +156,7 @@ public final class PillageCore extends JavaPlugin {
         EconomyDao economyDao = new EconomyDao(gameplayDb);
         ShopDao shopDao = new ShopDao(gameplayDb);
         PlayerInventoryDao playerInventoryDao = new PlayerInventoryDao(gameplayDb);
+        PlayerPositionDao playerPositionDao = new PlayerPositionDao(gameplayDb);
 
         // These stay on the global database - donor perks and moderation history must not reset
         // just because someone created or joined a mini-server.
@@ -219,13 +221,13 @@ public final class PillageCore extends JavaPlugin {
         // Provisions the main server + hub + every existing mini-server (each its own world and
         // its own gameplay database file), and loads team/shop state for each of them.
         instanceManager = new InstanceManager(this, gameplayDb, instanceDao, playerInstanceDao, teamManager,
-                shopManager, playerInventoryManager);
+                shopManager, playerInventoryManager, playerPositionDao);
         instanceManager.initialize();
         spawnService.applyMainWorldSpawn();
         hallOfFameManager.initialize(instanceManager.hubWorld());
 
         HubNpcManager hubNpcManager = new HubNpcManager(this);
-        hubNpcManager.spawnIfMissing(instanceManager.hubSpawn());
+        hubNpcManager.ensureSpawned(instanceManager.hubSpawn());
 
         playtimeTracker = new PlaytimeTracker(this, statsDao, instanceManager);
         playtimeTracker.start();
@@ -345,7 +347,7 @@ public final class PillageCore extends JavaPlugin {
         pm.registerEvents(new InstanceContextListener(instanceManager), this);
         pm.registerEvents(new InstanceJoinListener(instanceManager), this);
         pm.registerEvents(new HubMobGuardListener(instanceManager), this);
-        pm.registerEvents(new HubNpcListener(hubNpcManager, instanceManager, tpManager), this);
+        pm.registerEvents(new HubNpcListener(this, hubNpcManager, instanceManager, tpManager), this);
 
         pm.registerEvents(new FriendlyFireListener(teamManager), this);
         pm.registerEvents(new TeamChatListener(teamManager, teamChatService), this);
@@ -363,7 +365,7 @@ public final class PillageCore extends JavaPlugin {
         pm.registerEvents(new GlobalChatListener(chatManager, teamManager, donorManager), this);
         pm.registerEvents(new CombatTagListener(combatTagManager), this);
         pm.registerEvents(new DonorPerksListener(this, donorManager, donorNametagManager, donorPetManager), this);
-        pm.registerEvents(new HallOfFameListener(hallOfFameManager), this);
+        pm.registerEvents(new HallOfFameListener(this, hallOfFameManager), this);
         registerAnticheatListeners(pm);
     }
 

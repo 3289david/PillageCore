@@ -8,15 +8,20 @@ import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.entity.EntityDamageEvent;
+import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
+import org.bukkit.plugin.java.JavaPlugin;
 
 public final class HubNpcListener implements Listener {
 
+    private final JavaPlugin plugin;
     private final HubNpcManager npcManager;
     private final InstanceManager instanceManager;
     private final TpManager tpManager;
 
-    public HubNpcListener(HubNpcManager npcManager, InstanceManager instanceManager, TpManager tpManager) {
+    public HubNpcListener(JavaPlugin plugin, HubNpcManager npcManager, InstanceManager instanceManager, TpManager tpManager) {
+        this.plugin = plugin;
         this.npcManager = npcManager;
         this.instanceManager = instanceManager;
         this.tpManager = tpManager;
@@ -38,6 +43,23 @@ public final class HubNpcListener implements Listener {
             case MINI_CREATE -> promptCreate(player);
             case MINI_JOIN -> new InstanceSelectMenu(instanceManager, tpManager).open(player);
         }
+    }
+
+    // setInvulnerable(true) alone doesn't stop vanilla's /kill command - it's designed to bypass
+    // invulnerability outright - so cancel damage explicitly too.
+    @EventHandler(ignoreCancelled = true)
+    public void onDamage(EntityDamageEvent event) {
+        if (npcManager.roleOf(event.getEntity()) != null) {
+            event.setCancelled(true);
+        }
+    }
+
+    // Belt-and-suspenders: if something still removes an NPC despite the above (a command or
+    // plugin that bypasses EntityDamageEvent entirely), respawn just the missing one next tick.
+    @EventHandler
+    public void onDeath(EntityDeathEvent event) {
+        if (npcManager.roleOf(event.getEntity()) == null) return;
+        plugin.getServer().getScheduler().runTask(plugin, () -> npcManager.ensureSpawned(instanceManager.hubSpawn()));
     }
 
     private void promptCreate(Player player) {
