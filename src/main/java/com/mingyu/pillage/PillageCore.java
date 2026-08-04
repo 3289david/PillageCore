@@ -213,6 +213,7 @@ public final class PillageCore extends JavaPlugin {
         new DonorParticleTask(donorManager, combatTagManager).start(this);
 
         DonorPetManager donorPetManager = new DonorPetManager(this, donorManager, donorPetDao);
+        donorPetManager.start();
         HallOfFameManager hallOfFameManager = new HallOfFameManager(this, donorManager, hallOfFameDao, hallOfFameMetaDao);
         new DonorCombatVisibilityManager(donorManager, combatTagManager, donorNametagManager, donorPetManager).start(this);
 

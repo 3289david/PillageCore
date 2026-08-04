@@ -11,8 +11,13 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-/** Cosmetic cat companion for donors. Follows its owner via vanilla tamed-cat AI. */
+/** Cosmetic cat companion for donors. Follows its owner via vanilla tamed-cat AI within one
+ *  world, and via {@link #start} - a periodic check that teleports it to the owner whenever it's
+ *  in a different world or has fallen far behind - across instance switches (each instance is
+ *  its own Bukkit world, so nothing else moves the pet along with a cross-world teleport). */
 public final class DonorPetManager {
+
+    private static final double MAX_DISTANCE_SQUARED = 20 * 20;
 
     private final JavaPlugin plugin;
     private final DonorManager donorManager;
@@ -25,9 +30,19 @@ public final class DonorPetManager {
         this.petDao = petDao;
     }
 
+    /** Idempotent and self-healing: if a pet is already out there following its owner, does
+     *  nothing; if the tracked one is stale (dead, or orphaned in a world the owner already left),
+     *  cleans it up first. Either way this never results in more than one live cat per owner. */
     public void spawnFor(Player owner) {
         if (!donorManager.isDonor(owner.getUniqueId())) return;
-        if (activePets.containsKey(owner.getUniqueId())) return;
+
+        Cat existing = activePets.get(owner.getUniqueId());
+        if (existing != null) {
+            if (!existing.isDead()) {
+                return;
+            }
+            activePets.remove(owner.getUniqueId());
+        }
 
         DonorPetDao.PetInfo info = petDao.get(owner.getUniqueId());
         Location loc = owner.getLocation();
@@ -50,6 +65,26 @@ public final class DonorPetManager {
             cat.setCustomNameVisible(true);
         }
         activePets.put(owner.getUniqueId(), cat);
+    }
+
+    /** Keeps each donor's pet in the same world (and roughly the same spot) as its owner, since
+     *  switching instances teleports the player across worlds but never the pet on its own. */
+    public void start() {
+        plugin.getServer().getScheduler().runTaskTimer(plugin, () -> {
+            for (Map.Entry<UUID, Cat> entry : new HashMap<>(activePets).entrySet()) {
+                Player owner = plugin.getServer().getPlayer(entry.getKey());
+                Cat cat = entry.getValue();
+                if (owner == null || !owner.isOnline()) continue;
+                if (cat.isDead()) {
+                    activePets.remove(entry.getKey());
+                    continue;
+                }
+                boolean sameWorld = cat.getWorld().equals(owner.getWorld());
+                if (!sameWorld || cat.getLocation().distanceSquared(owner.getLocation()) > MAX_DISTANCE_SQUARED) {
+                    cat.teleport(owner.getLocation());
+                }
+            }
+        }, 20L, 20L);
     }
 
     public void despawnFor(UUID uuid) {
