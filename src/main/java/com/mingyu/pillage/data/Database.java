@@ -316,6 +316,12 @@ public final class Database {
                 instance_id TEXT NOT NULL
             );
         """);
+        st.execute("""
+            CREATE TABLE IF NOT EXISTS event_box_claims (
+                uuid TEXT PRIMARY KEY,
+                pending INTEGER NOT NULL DEFAULT 0
+            );
+        """);
     }
 
     public Connection connection() {

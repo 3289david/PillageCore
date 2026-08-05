@@ -31,6 +31,7 @@ import com.mingyu.pillage.data.dao.PlayerInstanceDao;
 import com.mingyu.pillage.data.dao.PlayerInventoryDao;
 import com.mingyu.pillage.data.dao.PlayerPositionDao;
 import com.mingyu.pillage.data.dao.PlayerVitalsDao;
+import com.mingyu.pillage.data.dao.EventBoxClaimDao;
 import com.mingyu.pillage.data.dao.ReportLogDao;
 import com.mingyu.pillage.data.dao.RewardDao;
 import com.mingyu.pillage.data.dao.StatsDao;
@@ -172,6 +173,9 @@ public final class PillageCore extends JavaPlugin {
         HallOfFameMetaDao hallOfFameMetaDao = new HallOfFameMetaDao(globalDb);
         InstanceDao instanceDao = new InstanceDao(globalDb);
         PlayerInstanceDao playerInstanceDao = new PlayerInstanceDao(globalDb);
+        // Also global: a box granted to an offline (or different-instance) player must still be
+        // there for them to claim with /eventbox get no matter where they log back in.
+        EventBoxClaimDao eventBoxClaimDao = new EventBoxClaimDao(globalDb);
 
         teamManager = new TeamManager(
                 teamDao, gameplayDb,
@@ -259,7 +263,8 @@ public final class PillageCore extends JavaPlugin {
 
         registerCommands(teamChatService, spawnService, killLogDao, reportLogDao, banLogDao, tpLogDao, tradeLogDao,
                 statsDao, deathLocationDao, staffModeManager, economyManager, rewardManager, eventBoxManager,
-                chatManager, shopManager, donorManager, donorNametagManager, donorPetManager, hallOfFameManager);
+                eventBoxClaimDao, chatManager, shopManager, donorManager, donorNametagManager, donorPetManager,
+                hallOfFameManager);
         registerListeners(teamChatService, killLogDao, statsDao, deathLocationDao, killStreakManager,
                 staffModeManager, eventBoxManager, chatManager, combatTagManager, donorManager, donorNametagManager,
                 donorPetManager, hallOfFameManager, hubNpcManager);
@@ -272,7 +277,8 @@ public final class PillageCore extends JavaPlugin {
                                    TpLogDao tpLogDao, TradeLogDao tradeLogDao, StatsDao statsDao,
                                    DeathLocationDao deathLocationDao, StaffModeManager staffModeManager,
                                    EconomyManager economyManager, RewardManager rewardManager,
-                                   EventBoxManager eventBoxManager, ChatManager chatManager,
+                                   EventBoxManager eventBoxManager, EventBoxClaimDao eventBoxClaimDao,
+                                   ChatManager chatManager,
                                    ShopManager shopManager, DonorManager donorManager,
                                    DonorNametagManager donorNametagManager, DonorPetManager donorPetManager,
                                    HallOfFameManager hallOfFameManager) {
@@ -317,7 +323,7 @@ public final class PillageCore extends JavaPlugin {
         getCommand("pay").setExecutor(new PayCommand(economyManager));
         getCommand("deposit").setExecutor(new DepositCommand(economyManager));
         getCommand("withdraw").setExecutor(new WithdrawCommand(economyManager));
-        getCommand("eventbox").setExecutor(new EventBoxCommand(eventBoxManager));
+        getCommand("eventbox").setExecutor(new EventBoxCommand(eventBoxManager, eventBoxClaimDao));
         getCommand("shop").setExecutor(new ShopCommand(shopManager));
 
         getCommand("msg").setExecutor(new MsgCommand(chatManager));

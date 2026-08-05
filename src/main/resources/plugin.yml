@@ -122,9 +122,8 @@ commands:
     usage: /pillageban <player> [사유]
     permission: pillage.admin
   eventbox:
-    description: 이벤트 상자 지급
-    usage: /eventbox give <player> [수량]
-    permission: pillage.admin
+    description: 이벤트 상자 지급/수령 (지급은 관리자 전용, 수령은 누구나)
+    usage: /eventbox give <player> [수량] 또는 /eventbox get
   shop:
     description: 상점 GUI 열기 (관리자는 add/remove/list로 항목 관리)
     usage: /shop [add|remove|list] [args]

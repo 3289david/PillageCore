@@ -56,9 +56,10 @@ public final class PillageHelpCommand implements CommandExecutor {
                     "&e/deposit [수량]&f - 에메랄드를 잔액으로, &e/withdraw <수량>&f - 잔액을 에메랄드로",
                     "&e/dailyreward &f- 24시간마다 1회, 스테이크 수령 가능",
                     "&e/shop &f- 아이템 교환 상점 GUI 열기",
+                    "&e/eventbox get &f- 관리자가 예약해준 이벤트 상자 수령 (오프라인이었어도 쌓여 있음)",
                     "&7- 누적 플레이타임이 일정 시간을 넘길 때마다 자동으로 에메랄드 보상이 지급됩니다.",
-                    "&7- 관리자가 지급하는 이벤트 상자를 우클릭하면 랜덤 보상을 받습니다. 대부분(약 81%)은",
-                    "&7 스테이크/빵/석탄 같은 평범한 보상이고, 가끔(항목당 약 1.9%) OP 네더라이트 장비가 나옵니다."
+                    "&7- 이벤트 상자를 우클릭하면 랜덤 보상을 받습니다. 대부분(약 79%)은",
+                    "&7 철·금 주괴/에메랄드/다이아몬드 같은 보상이고, 가끔(항목당 약 2.1%) OP 네더라이트 장비가 나옵니다."
             ),
             List.of(
                     "&6[채팅]",
@@ -71,7 +72,7 @@ public final class PillageHelpCommand implements CommandExecutor {
                     "&e/inspect <player> &f- 인벤토리 읽기 전용 검사",
                     "&e/logs <kill|ban|tp|trade> [개수] &f- 최근 로그 조회",
                     "&e/pillageban <player> [사유] &f- 차단 + 로그 기록",
-                    "&e/eventbox give <player> [수량] &f- 이벤트 상자 지급",
+                    "&e/eventbox give <player> [수량] &f- 이벤트 상자 지급 예약 (오프라인/다른 서버여도 가능, /eventbox get 으로 수령)",
                     "&e/shop add <내는아이템> <내는수량> <받는아이템> <받는수량> &f- 상점 항목 추가",
                     "&e/shop remove <id> &f, &e/shop list &f- 상점 항목 삭제/조회",
                     "&e/anticheat &f설정은 config.yml 의 anticheat 섹션에서 조절 (기본: 경고만, 매우 널널)"

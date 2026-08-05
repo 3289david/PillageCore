@@ -17,9 +17,10 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Supplier;
 
 /**
- * Loot box weighted heavily toward junk (common) with a small chance at real OP gear (rare).
- * Every enchanted item carries 3-4 enchantments, all vanilla-legal combos/levels achievable
- * on an anvil in normal survival - nothing here requires creative mode or commands.
+ * Loot box weighted heavily toward valuable-but-ordinary materials (common) with a small chance
+ * at real OP gear (rare). Every enchanted item carries 3-4 enchantments, all vanilla-legal
+ * combos/levels achievable on an anvil in normal survival - nothing here requires creative mode
+ * or commands.
  */
 public final class EventBoxManager {
 
@@ -29,12 +30,11 @@ public final class EventBoxManager {
     private final NamespacedKey key;
 
     private final List<WeightedEntry> pool = List.of(
-            // Junk / common - high weight, this is what you'll get most of the time.
-            new WeightedEntry(40, () -> new ItemStack(Material.COOKED_BEEF, 32)),
-            new WeightedEntry(30, () -> new ItemStack(Material.BREAD, 16)),
-            new WeightedEntry(25, () -> new ItemStack(Material.COAL, 16)),
-            new WeightedEntry(20, () -> new ItemStack(Material.ROTTEN_FLESH, 8)),
-            new WeightedEntry(15, () -> new ItemStack(Material.IRON_INGOT, 4)),
+            // Common - high weight, this is what you'll get most of the time.
+            new WeightedEntry(35, () -> new ItemStack(Material.IRON_INGOT, 8)),
+            new WeightedEntry(30, () -> new ItemStack(Material.GOLD_INGOT, 8)),
+            new WeightedEntry(25, () -> new ItemStack(Material.EMERALD, 5)),
+            new WeightedEntry(20, () -> new ItemStack(Material.DIAMOND, 3)),
 
             // OP gear - low weight, this is the rare jackpot.
             new WeightedEntry(3, () -> enchant(new ItemStack(Material.NETHERITE_SWORD), Enchantment.SHARPNESS, 5,
