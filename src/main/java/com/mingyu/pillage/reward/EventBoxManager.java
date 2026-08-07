@@ -1,5 +1,6 @@
 package com.mingyu.pillage.reward;
 
+import com.mingyu.pillage.data.dao.EventBoxOpenDao;
 import com.mingyu.pillage.util.ItemBuilder;
 import com.mingyu.pillage.util.Msg;
 import org.bukkit.Material;
@@ -18,25 +19,29 @@ import java.util.function.Supplier;
 
 /**
  * Loot box weighted heavily toward valuable-but-ordinary materials (common) with a small chance
- * at real OP gear (rare). Every enchanted item carries 3-4 enchantments, all vanilla-legal
- * combos/levels achievable on an anvil in normal survival - nothing here requires creative mode
- * or commands.
+ * at real OP gear (rare) - except every 5th box a player ever opens (lifetime, tracked globally
+ * so it isn't reset by switching servers), which is a guaranteed OP item instead of a roll. Every
+ * enchanted item carries 3-4 enchantments, all vanilla-legal combos/levels achievable on an
+ * anvil in normal survival - nothing here requires creative mode or commands.
  */
 public final class EventBoxManager {
+
+    private static final int GUARANTEED_OP_EVERY = 5;
 
     private record WeightedEntry(int weight, Supplier<ItemStack> item) {
     }
 
     private final NamespacedKey key;
+    private final EventBoxOpenDao openDao;
 
-    private final List<WeightedEntry> pool = List.of(
-            // Common - high weight, this is what you'll get most of the time.
+    private final List<WeightedEntry> commonPool = List.of(
             new WeightedEntry(35, () -> new ItemStack(Material.IRON_INGOT, 8)),
             new WeightedEntry(30, () -> new ItemStack(Material.GOLD_INGOT, 8)),
             new WeightedEntry(25, () -> new ItemStack(Material.EMERALD, 5)),
-            new WeightedEntry(20, () -> new ItemStack(Material.DIAMOND, 3)),
+            new WeightedEntry(20, () -> new ItemStack(Material.DIAMOND, 3))
+    );
 
-            // OP gear - low weight, this is the rare jackpot.
+    private final List<WeightedEntry> opPool = List.of(
             new WeightedEntry(3, () -> enchant(new ItemStack(Material.NETHERITE_SWORD), Enchantment.SHARPNESS, 5,
                     Enchantment.LOOTING, 3, Enchantment.UNBREAKING, 3, Enchantment.MENDING, 1)),
             new WeightedEntry(3, () -> enchant(new ItemStack(Material.NETHERITE_AXE), Enchantment.SHARPNESS, 5,
@@ -60,10 +65,14 @@ public final class EventBoxManager {
     );
 
     private final int totalWeight;
+    private final int opWeight;
 
-    public EventBoxManager(JavaPlugin plugin) {
+    public EventBoxManager(JavaPlugin plugin, EventBoxOpenDao openDao) {
         this.key = new NamespacedKey(plugin, "event_box");
-        this.totalWeight = pool.stream().mapToInt(WeightedEntry::weight).sum();
+        this.openDao = openDao;
+        this.totalWeight = commonPool.stream().mapToInt(WeightedEntry::weight).sum()
+                + opPool.stream().mapToInt(WeightedEntry::weight).sum();
+        this.opWeight = opPool.stream().mapToInt(WeightedEntry::weight).sum();
     }
 
     private static ItemStack enchant(ItemStack item, Object... enchantLevelPairs) {
@@ -75,8 +84,23 @@ public final class EventBoxManager {
         return item;
     }
 
-    private ItemStack rollReward() {
+    private ItemStack rollReward(boolean guaranteedOp) {
+        if (guaranteedOp) {
+            return rollFrom(opPool, opWeight);
+        }
         int roll = ThreadLocalRandom.current().nextInt(totalWeight);
+        int cumulative = 0;
+        for (WeightedEntry entry : commonPool) {
+            cumulative += entry.weight();
+            if (roll < cumulative) {
+                return entry.item().get();
+            }
+        }
+        return rollFrom(opPool, opWeight);
+    }
+
+    private ItemStack rollFrom(List<WeightedEntry> pool, int poolWeight) {
+        int roll = ThreadLocalRandom.current().nextInt(poolWeight);
         int cumulative = 0;
         for (WeightedEntry entry : pool) {
             cumulative += entry.weight();
@@ -95,7 +119,8 @@ public final class EventBoxManager {
         // PlayerInteractEvent handler is guaranteed to be the only thing responding to the click.
         ItemStack item = new ItemBuilder(Material.NETHER_STAR)
                 .name("&d&l✦ 이벤트 상자 ✦")
-                .lore("&7우클릭하여 열기", "&7대부분은 평범한 보상, 아주 가끔 OP 아이템")
+                .lore("&7우클릭하여 열기", "&7대부분은 평범한 보상, 아주 가끔 OP 아이템",
+                        "&e" + GUARANTEED_OP_EVERY + "개마다 확정 OP 아이템!")
                 .build();
         ItemMeta meta = item.getItemMeta();
         meta.getPersistentDataContainer().set(key, PersistentDataType.BYTE, (byte) 1);
@@ -112,13 +137,21 @@ public final class EventBoxManager {
 
     /** Consumes one item from the player's main hand (must already be verified as an event box). */
     public void openFromMainHand(Player player) {
-        ItemStack reward = rollReward();
+        int opened = openDao.incrementAndGet(player.getUniqueId());
+        boolean guaranteedOp = opened % GUARANTEED_OP_EVERY == 0;
+        ItemStack reward = rollReward(guaranteedOp);
 
         var leftover = player.getInventory().addItem(reward);
         for (ItemStack extra : leftover.values()) {
             player.getWorld().dropItemNaturally(player.getLocation(), extra);
         }
-        player.sendMessage(Msg.of("&d이벤트 상자를 열어 &e" + reward.getAmount() + "x " + reward.getType() + "&d 을(를) 획득했습니다!"));
+        if (guaranteedOp) {
+            player.sendMessage(Msg.of("&6&l✦ " + GUARANTEED_OP_EVERY + "번째 상자 확정 보상! &e"
+                    + reward.getAmount() + "x " + reward.getType() + "&6 을(를) 획득했습니다!"));
+        } else {
+            player.sendMessage(Msg.of("&d이벤트 상자를 열어 &e" + reward.getAmount() + "x " + reward.getType()
+                    + "&d 을(를) 획득했습니다! &7(" + (opened % GUARANTEED_OP_EVERY) + "/" + GUARANTEED_OP_EVERY + ")"));
+        }
 
         ItemStack hand = player.getInventory().getItemInMainHand();
         if (hand.getAmount() <= 1) {

@@ -322,6 +322,12 @@ public final class Database {
                 pending INTEGER NOT NULL DEFAULT 0
             );
         """);
+        st.execute("""
+            CREATE TABLE IF NOT EXISTS event_box_opens (
+                uuid TEXT PRIMARY KEY,
+                opened_count INTEGER NOT NULL DEFAULT 0
+            );
+        """);
     }
 
     public Connection connection() {

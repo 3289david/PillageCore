@@ -32,6 +32,7 @@ import com.mingyu.pillage.data.dao.PlayerInventoryDao;
 import com.mingyu.pillage.data.dao.PlayerPositionDao;
 import com.mingyu.pillage.data.dao.PlayerVitalsDao;
 import com.mingyu.pillage.data.dao.EventBoxClaimDao;
+import com.mingyu.pillage.data.dao.EventBoxOpenDao;
 import com.mingyu.pillage.data.dao.ReportLogDao;
 import com.mingyu.pillage.data.dao.RewardDao;
 import com.mingyu.pillage.data.dao.StatsDao;
@@ -176,6 +177,7 @@ public final class PillageCore extends JavaPlugin {
         // Also global: a box granted to an offline (or different-instance) player must still be
         // there for them to claim with /eventbox get no matter where they log back in.
         EventBoxClaimDao eventBoxClaimDao = new EventBoxClaimDao(globalDb);
+        EventBoxOpenDao eventBoxOpenDao = new EventBoxOpenDao(globalDb);
 
         teamManager = new TeamManager(
                 teamDao, gameplayDb,
@@ -250,7 +252,7 @@ public final class PillageCore extends JavaPlugin {
                 getConfig().getLong("reward.playtime-amount", 20));
         rewardManager.startPlaytimeCheck();
 
-        EventBoxManager eventBoxManager = new EventBoxManager(this);
+        EventBoxManager eventBoxManager = new EventBoxManager(this, eventBoxOpenDao);
 
         StaffModeManager staffModeManager = new StaffModeManager(this);
 
