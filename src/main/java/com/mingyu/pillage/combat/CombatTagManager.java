@@ -6,9 +6,10 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Very small "can't flee" tag: only tracks that a player was recently in a 1v1
- * (player vs player) fight, so ender pearl / chorus fruit teleports can be blocked.
- * Does not touch plugin TP commands, logout penalties, etc. - kept intentionally minimal.
+ * Small "can't flee" tag: tracks that a player was recently in a 1v1 (player vs player) fight,
+ * so plugin teleports and ender pearl / chorus fruit can be blocked while tagged, and
+ * {@link com.mingyu.pillage.combat.CombatTagListener} kills anyone who disconnects while tagged
+ * instead of letting them escape a fight by logging out.
  */
 public final class CombatTagManager {
 

@@ -28,6 +28,12 @@ public final class CombatTagListener implements Listener {
 
     @EventHandler
     public void onQuit(PlayerQuitEvent event) {
-        combatTagManager.clear(event.getPlayer().getUniqueId());
+        Player player = event.getPlayer();
+        // Combat logging: quitting mid-fight kills you on the spot instead of letting you
+        // escape by disconnecting.
+        if (combatTagManager.isInCombat(player.getUniqueId()) && player.getHealth() > 0) {
+            player.setHealth(0.0);
+        }
+        combatTagManager.clear(player.getUniqueId());
     }
 }
