@@ -249,6 +249,12 @@ public final class Database {
                 exhaustion REAL NOT NULL
             );
         """);
+        st.execute("""
+            CREATE TABLE IF NOT EXISTS player_effects (
+                uuid TEXT PRIMARY KEY,
+                effects TEXT NOT NULL
+            );
+        """);
     }
 
     private void createGlobalSchema(Statement st) throws SQLException {
@@ -282,9 +288,17 @@ public final class Database {
             CREATE TABLE IF NOT EXISTS donor_pets (
                 uuid TEXT PRIMARY KEY,
                 name TEXT,
-                variant TEXT NOT NULL DEFAULT 'TABBY'
+                variant TEXT NOT NULL DEFAULT 'TABBY',
+                enabled INTEGER NOT NULL DEFAULT 1
             );
         """);
+        // Migration for databases created before "enabled" existed - CREATE TABLE IF NOT EXISTS
+        // is a no-op on an already-existing table, so this adds the column separately. Fails
+        // harmlessly with "duplicate column" on a fresh database that already has it.
+        try {
+            st.execute("ALTER TABLE donor_pets ADD COLUMN enabled INTEGER NOT NULL DEFAULT 1;");
+        } catch (SQLException ignored) {
+        }
         st.execute("""
             CREATE TABLE IF NOT EXISTS hall_of_fame (
                 uuid TEXT PRIMARY KEY,

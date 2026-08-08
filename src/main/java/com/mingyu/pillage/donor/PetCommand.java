@@ -34,8 +34,18 @@ public final class PetCommand implements CommandExecutor, TabCompleter {
             player.sendMessage(Msg.of("&c후원자 전용 명령어입니다."));
             return true;
         }
+
+        if (args.length >= 1 && (args[0].equalsIgnoreCase("on") || args[0].equalsIgnoreCase("off"))) {
+            boolean enabled = args[0].equalsIgnoreCase("on");
+            petManager.setEnabled(player, enabled);
+            player.sendMessage(enabled
+                    ? Msg.of("&a펫을 다시 불러왔습니다.")
+                    : Msg.of("&7펫을 숨겼습니다. &e/pet on&7 으로 다시 부를 수 있습니다."));
+            return true;
+        }
+
         if (args.length < 2 || !(args[0].equalsIgnoreCase("name") || args[0].equalsIgnoreCase("variant"))) {
-            player.sendMessage(Msg.of("&c사용법: /pet name <이름> &f또는 &c/pet variant <종류>"));
+            player.sendMessage(Msg.of("&c사용법: /pet name <이름> &f/ &c/pet variant <종류> &f/ &c/pet on|off"));
             player.sendMessage(Msg.of("&7종류: " + Arrays.stream(Cat.Type.values()).map(Cat.Type::name).collect(Collectors.joining(", "))));
             return true;
         }
@@ -65,7 +75,7 @@ public final class PetCommand implements CommandExecutor, TabCompleter {
     @Override
     public @Nullable List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command, @NotNull String alias, @NotNull String[] args) {
         if (args.length == 1) {
-            return List.of("name", "variant");
+            return List.of("name", "variant", "on", "off");
         }
         if (args.length == 2 && args[0].equalsIgnoreCase("variant")) {
             return Arrays.stream(Cat.Type.values()).map(Cat.Type::name).toList();

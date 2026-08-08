@@ -9,7 +9,7 @@ import java.util.UUID;
 
 public final class DonorPetDao {
 
-    public record PetInfo(String name, String variant) {
+    public record PetInfo(String name, String variant, boolean enabled) {
     }
 
     private final Database database;
@@ -20,11 +20,11 @@ public final class DonorPetDao {
 
     public PetInfo get(UUID uuid) {
         try (PreparedStatement ps = database.connection().prepareStatement(
-                "SELECT name, variant FROM donor_pets WHERE uuid = ?")) {
+                "SELECT name, variant, enabled FROM donor_pets WHERE uuid = ?")) {
             ps.setString(1, uuid.toString());
             try (ResultSet rs = ps.executeQuery()) {
                 if (!rs.next()) return null;
-                return new PetInfo(rs.getString("name"), rs.getString("variant"));
+                return new PetInfo(rs.getString("name"), rs.getString("variant"), rs.getInt("enabled") != 0);
             }
         } catch (SQLException e) {
             throw new IllegalStateException("펫 정보 조회에 실패했습니다.", e);
@@ -52,6 +52,18 @@ public final class DonorPetDao {
             ps.executeUpdate();
         } catch (SQLException e) {
             throw new IllegalStateException("펫 종류 저장에 실패했습니다.", e);
+        }
+    }
+
+    public void setEnabled(UUID uuid, boolean enabled) {
+        try (PreparedStatement ps = database.connection().prepareStatement(
+                "INSERT INTO donor_pets (uuid, enabled) VALUES (?, ?) " +
+                        "ON CONFLICT(uuid) DO UPDATE SET enabled = excluded.enabled")) {
+            ps.setString(1, uuid.toString());
+            ps.setInt(2, enabled ? 1 : 0);
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            throw new IllegalStateException("펫 표시 여부 저장에 실패했습니다.", e);
         }
     }
 

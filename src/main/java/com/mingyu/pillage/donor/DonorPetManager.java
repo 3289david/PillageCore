@@ -32,9 +32,13 @@ public final class DonorPetManager {
 
     /** Idempotent and self-healing: if a pet is already out there following its owner, does
      *  nothing; if the tracked one is stale (dead, or orphaned in a world the owner already left),
-     *  cleans it up first. Either way this never results in more than one live cat per owner. */
+     *  cleans it up first. Either way this never results in more than one live cat per owner.
+     *  Does nothing at all if the owner has turned their pet off with /pet off. */
     public void spawnFor(Player owner) {
         if (!donorManager.isDonor(owner.getUniqueId())) return;
+
+        DonorPetDao.PetInfo info = petDao.get(owner.getUniqueId());
+        if (info != null && !info.enabled()) return;
 
         Cat existing = activePets.get(owner.getUniqueId());
         if (existing != null) {
@@ -44,7 +48,6 @@ public final class DonorPetManager {
             activePets.remove(owner.getUniqueId());
         }
 
-        DonorPetDao.PetInfo info = petDao.get(owner.getUniqueId());
         Location loc = owner.getLocation();
         Cat cat = loc.getWorld().spawn(loc, Cat.class);
         cat.setTamed(true);
@@ -121,6 +124,22 @@ public final class DonorPetManager {
         Cat cat = activePets.get(owner.getUniqueId());
         if (cat != null) {
             cat.setCatType(type);
+        }
+    }
+
+    public boolean isEnabled(UUID uuid) {
+        DonorPetDao.PetInfo info = petDao.get(uuid);
+        return info == null || info.enabled();
+    }
+
+    /** Turns the pet on/off - persists across sessions and instance switches, independent of
+     *  the temporary combat hide/restore. */
+    public void setEnabled(Player owner, boolean enabled) {
+        petDao.setEnabled(owner.getUniqueId(), enabled);
+        if (enabled) {
+            spawnFor(owner);
+        } else {
+            despawnFor(owner.getUniqueId());
         }
     }
 

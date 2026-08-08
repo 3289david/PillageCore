@@ -17,6 +17,7 @@ import com.mingyu.pillage.chat.ChatManager;
 import com.mingyu.pillage.chat.GlobalChatListener;
 import com.mingyu.pillage.chat.MsgCommand;
 import com.mingyu.pillage.chat.ReplyCommand;
+import com.mingyu.pillage.combat.CombatBossBarManager;
 import com.mingyu.pillage.combat.CombatTagListener;
 import com.mingyu.pillage.combat.CombatTagManager;
 import com.mingyu.pillage.data.Database;
@@ -31,6 +32,7 @@ import com.mingyu.pillage.data.dao.PlayerInstanceDao;
 import com.mingyu.pillage.data.dao.PlayerInventoryDao;
 import com.mingyu.pillage.data.dao.PlayerPositionDao;
 import com.mingyu.pillage.data.dao.PlayerVitalsDao;
+import com.mingyu.pillage.data.dao.PlayerEffectDao;
 import com.mingyu.pillage.data.dao.EventBoxClaimDao;
 import com.mingyu.pillage.data.dao.EventBoxOpenDao;
 import com.mingyu.pillage.data.dao.ReportLogDao;
@@ -73,6 +75,7 @@ import com.mingyu.pillage.instance.MainServerCommand;
 import com.mingyu.pillage.instance.MiniServerCommand;
 import com.mingyu.pillage.instance.PlayerInventoryManager;
 import com.mingyu.pillage.instance.PlayerVitalsManager;
+import com.mingyu.pillage.instance.PlayerEffectsManager;
 import com.mingyu.pillage.menu.MenuCommand;
 import com.mingyu.pillage.menu.MenuListener;
 import com.mingyu.pillage.menu.MenuService;
@@ -163,6 +166,7 @@ public final class PillageCore extends JavaPlugin {
         PlayerInventoryDao playerInventoryDao = new PlayerInventoryDao(gameplayDb);
         PlayerPositionDao playerPositionDao = new PlayerPositionDao(gameplayDb);
         PlayerVitalsDao playerVitalsDao = new PlayerVitalsDao(gameplayDb);
+        PlayerEffectDao playerEffectDao = new PlayerEffectDao(gameplayDb);
 
         // These stay on the global database - donor perks and moderation history must not reset
         // just because someone created or joined a mini-server.
@@ -213,6 +217,8 @@ public final class PillageCore extends JavaPlugin {
         KillStreakManager killStreakManager = new KillStreakManager();
         CombatTagManager combatTagManager = new CombatTagManager(getConfig().getInt("combat.tag-duration-seconds", 30));
         tpManager.setCombatTagManager(combatTagManager);
+        CombatBossBarManager combatBossBarManager = new CombatBossBarManager(combatTagManager);
+        combatBossBarManager.start(this);
 
         DonorManager donorManager = new DonorManager(donorDao);
         DonorNametagManager donorNametagManager = new DonorNametagManager(donorManager);
@@ -229,11 +235,12 @@ public final class PillageCore extends JavaPlugin {
         ShopManager shopManager = new ShopManager(shopDao, gameplayDb);
         PlayerInventoryManager playerInventoryManager = new PlayerInventoryManager(playerInventoryDao);
         PlayerVitalsManager playerVitalsManager = new PlayerVitalsManager(playerVitalsDao);
+        PlayerEffectsManager playerEffectsManager = new PlayerEffectsManager(playerEffectDao);
 
         // Provisions the main server + hub + every existing mini-server (each its own world and
         // its own gameplay database file), and loads team/shop state for each of them.
         instanceManager = new InstanceManager(this, gameplayDb, instanceDao, playerInstanceDao, teamManager,
-                shopManager, playerInventoryManager, playerPositionDao, playerVitalsManager);
+                shopManager, playerInventoryManager, playerPositionDao, playerVitalsManager, playerEffectsManager);
         instanceManager.initialize();
         spawnService.applyMainWorldSpawn();
         hallOfFameManager.initialize(instanceManager.hubWorld());
@@ -268,8 +275,8 @@ public final class PillageCore extends JavaPlugin {
                 eventBoxClaimDao, chatManager, shopManager, donorManager, donorNametagManager, donorPetManager,
                 hallOfFameManager);
         registerListeners(teamChatService, killLogDao, statsDao, deathLocationDao, killStreakManager,
-                staffModeManager, eventBoxManager, chatManager, combatTagManager, donorManager, donorNametagManager,
-                donorPetManager, hallOfFameManager, hubNpcManager);
+                staffModeManager, eventBoxManager, chatManager, combatTagManager, combatBossBarManager, donorManager,
+                donorNametagManager, donorPetManager, hallOfFameManager, hubNpcManager);
 
         getLogger().info("PillageCore 가 활성화되었습니다.");
     }
@@ -352,7 +359,8 @@ public final class PillageCore extends JavaPlugin {
                                     DeathLocationDao deathLocationDao, KillStreakManager killStreakManager,
                                     StaffModeManager staffModeManager,
                                     EventBoxManager eventBoxManager, ChatManager chatManager,
-                                    CombatTagManager combatTagManager, DonorManager donorManager,
+                                    CombatTagManager combatTagManager, CombatBossBarManager combatBossBarManager,
+                                    DonorManager donorManager,
                                     DonorNametagManager donorNametagManager, DonorPetManager donorPetManager,
                                     HallOfFameManager hallOfFameManager, HubNpcManager hubNpcManager) {
         var pm = getServer().getPluginManager();
@@ -379,6 +387,7 @@ public final class PillageCore extends JavaPlugin {
         pm.registerEvents(new EventBoxListener(eventBoxManager), this);
         pm.registerEvents(new GlobalChatListener(chatManager, teamManager, donorManager), this);
         pm.registerEvents(new CombatTagListener(combatTagManager), this);
+        pm.registerEvents(combatBossBarManager, this);
         pm.registerEvents(new DonorPerksListener(this, donorManager, donorNametagManager, donorPetManager), this);
         pm.registerEvents(new HallOfFameListener(this, hallOfFameManager), this);
         registerAnticheatListeners(pm);

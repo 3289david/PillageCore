@@ -38,4 +38,8 @@ public final class CombatTagManager {
     public void clear(UUID uuid) {
         taggedUntil.remove(uuid);
     }
+
+    public long tagDurationSeconds() {
+        return tagDurationMillis / 1000;
+    }
 }
