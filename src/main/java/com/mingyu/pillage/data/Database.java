@@ -255,6 +255,12 @@ public final class Database {
                 effects TEXT NOT NULL
             );
         """);
+        st.execute("""
+            CREATE TABLE IF NOT EXISTS home_settings (
+                id INTEGER PRIMARY KEY CHECK (id = 1),
+                enabled INTEGER NOT NULL DEFAULT 1
+            );
+        """);
     }
 
     private void createGlobalSchema(Statement st) throws SQLException {

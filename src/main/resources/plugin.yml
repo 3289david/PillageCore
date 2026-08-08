@@ -39,6 +39,14 @@ commands:
   delhome:
     description: 홈 삭제
     usage: /delhome [이름]
+  homeadmin:
+    description: 이 서버(인스턴스)에서 홈 기능 켜기/끄기
+    usage: /homeadmin <on|off>
+    permission: pillage.admin
+  backup:
+    description: 지금 서 있는 서버의 월드(청크)와 접속 중인 플레이어 인벤토리를 즉시 백업
+    usage: /backup
+    permission: pillage.admin
   trade:
     description: 다른 플레이어에게 거래 요청
     usage: /trade <player>

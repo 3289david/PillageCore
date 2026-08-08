@@ -1,5 +1,6 @@
 package com.mingyu.pillage.tp.command;
 
+import com.mingyu.pillage.data.dao.HomeSettingsDao;
 import com.mingyu.pillage.tp.TpManager;
 import com.mingyu.pillage.util.Msg;
 import org.bukkit.Location;
@@ -17,15 +18,21 @@ import java.util.Map;
 public final class HomeCommand implements CommandExecutor, TabCompleter {
 
     private final TpManager tpManager;
+    private final HomeSettingsDao homeSettingsDao;
 
-    public HomeCommand(TpManager tpManager) {
+    public HomeCommand(TpManager tpManager, HomeSettingsDao homeSettingsDao) {
         this.tpManager = tpManager;
+        this.homeSettingsDao = homeSettingsDao;
     }
 
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
         if (!(sender instanceof Player player)) {
             sender.sendMessage("플레이어만 사용할 수 있는 명령어입니다.");
+            return true;
+        }
+        if (!homeSettingsDao.isEnabled()) {
+            player.sendMessage(Msg.of("&c이 서버에서는 홈 기능이 비활성화되어 있습니다."));
             return true;
         }
         Map<String, Location> homes = tpManager.homes(player.getUniqueId());

@@ -64,8 +64,9 @@
 | `/back` | 마지막 위치로 |
 | `/home [이름]` / `/sethome [이름]` / `/delhome [이름]` | 개인 홈 |
 | `/death` | 마지막 사망 위치로 이동 |
+| `/homeadmin <on\|off>` (관리자) | 지금 서 있는 서버(인스턴스)에서만 홈 기능 켜기/끄기 |
 
-모든 텔레포트는 5초 카운트다운 + 이동 시 취소 + 쿨타임이 적용됩니다. **비행(엘리트라 글라이딩) 중이거나, 방금 다른 플레이어와 맞붙어 "전투 중" 상태일 때는 `/tpa`, `/back`, `/home` 등 플러그인 텔레포트를 사용할 수 없습니다** (엔더펄/코러스프룻 자체는 막지 않음).
+모든 텔레포트는 5초 카운트다운 + 이동 시 취소 + 쿨타임이 적용됩니다. **비행(엘리트라 글라이딩) 중이거나, 방금 다른 플레이어와 맞붙어 "전투 중" 상태일 때는 `/tpa`, `/back`, `/home` 등 플러그인 텔레포트를 사용할 수 없습니다** (엔더펄/코러스프룻 자체는 막지 않음). `/homeadmin off`로 홈 기능을 끈 서버에서는 `/sethome`, `/home`, `/delhome`이 전부 막힙니다 — 다른 서버(인스턴스)에는 영향이 없습니다.
 
 ### 거래
 
@@ -180,11 +181,14 @@
 | `/inspect <player>` | 인벤토리 읽기 전용 검사 |
 | `/logs <trade\|kill\|ban\|tp> [개수]` | 최근 로그 조회 |
 | `/pillageban <player> [사유]` | 차단 + 로그 기록 |
+| `/backup` | 지금 서 있는 서버(인스턴스)의 월드(청크)와 접속 중인 플레이어 인벤토리를 즉시 백업 (아래 참고) |
+
+`/backup`은 예약/자동 백업이 아니라 관리자가 원하는 시점에 직접 실행하는 즉석 스냅샷입니다. 실행하면 그 순간 월드를 디스크에 강제로 저장한 뒤 `plugins/PillageCore/backups/<인스턴스ID>_<시각>/` 폴더에 월드 전체(`world/`)와 그 서버에 접속 중인 플레이어들의 인벤토리(`inventories/<UUID>_<이름>.dat`)를 복사해둡니다. 월드가 크면 복사하는 동안 서버가 잠깐 멈출 수 있습니다 — 되돌리는(복원) 명령어는 아직 없고, 백업 폴더를 수동으로 대조/복사해서 써야 합니다.
 
 ## 자동 시스템 (명령어 없음)
 
 - **레이드 타이머**: 신규 팀 보호 없이 언제든 팀이 공격받으면 팀 전체에 경고 메시지가 뜹니다(텔레포트 제한이나 로그아웃 처형은 없음). 레이드 종료 시 공격 측 킬 수가 `raid.win-kill-threshold`(기본 3) 이상이면 공격 팀 "약탈 성공"(+약탈 점수), 아니면 수비 팀 "레이드 방어"로 기록됩니다.
-- **킬 로그 / 킬 스트릭**: 모든 PvP 킬이 킬 피드로 브로드캐스트되고 DB에 기록됩니다(후원자는 그라데이션 이름으로 표시). 5/10/20 연킬은 전체 공지됩니다. 사망 시 드롭 아이템은 커스텀 상자 없이 바닥에 그대로 흩어집니다(서버의 `keepInventory` 게임규칙을 그대로 따름).
+- **킬 로그 / 킬 스트릭**: 모든 PvP 킬이 킬 피드로 알려지고 DB에 기록됩니다(후원자는 그라데이션 이름으로 표시). 5/10/20 연킬도 공지됩니다. **이 알림들은 전체 서버로 브로드캐스트되지 않고, 그 킬이 일어난 서버(인스턴스)에 있는 플레이어에게만 표시됩니다** — 다른 미니서버에서 일어난 싸움이 보이지 않습니다. 사망 시 드롭 아이템은 커스텀 상자 없이 바닥에 그대로 흩어집니다(서버의 `keepInventory` 게임규칙을 그대로 따름).
 - **전투 태그**: 플레이어끼리 서로 때리면 30초간 "전투 중" 상태가 되고, 그 동안에는 `/tpa`, `/back`, `/home` 같은 플러그인 텔레포트를 쓸 수 없습니다(`config.yml`의 `combat.tag-duration-seconds`). 화면 위쪽에 남은 시간을 보여주는 보스바가 뜨고, 다시 맞을 때마다 30초로 초기화되는 게 그대로 반영됩니다(몬스터에게 맞는 건 전투 태그와 무관 — PvP로만 걸립니다). 엔더펄/코러스프룻 같은 바닐라 순간이동에는 영향이 없지만, **이 상태에서 로그아웃(서버 나가기)하면 그 자리에서 즉시 사망 처리됩니다** — 전투 중 도주 목적의 로그아웃을 막기 위함입니다.
 - **안티치트 (매우 널널)**: KillAura / Reach / Speed / Fly / AutoClick / Scaffold / FastBreak 7종. 판정 임계값을 넉넉하게 잡았고, 여러 번(기본 10회) 반복되어야 `pillage.admin` 권한자에게 채팅 경고만 보냅니다. 자동 제재(킥)는 `config.yml`의 `anticheat.punish.enabled`를 켜야만 동작하며 기본은 꺼져 있습니다.
 
@@ -195,7 +199,7 @@
 | `pillage.team.*` | true | 팀 명령어 |
 | `pillage.tp.*` | true | TP 명령어 |
 | `pillage.trade.*` | true | 거래 명령어 |
-| `pillage.admin` | op | 안티치트 경고 수신, 관리자 명령어(`/staff`, `/inspect`, `/logs`, `/pillageban`, `/eventbox`, `/shop add\|remove\|list`, `/donor add\|remove\|list`), 인원수 제한 우회 등 |
+| `pillage.admin` | op | 안티치트 경고 수신, 관리자 명령어(`/staff`, `/inspect`, `/logs`, `/pillageban`, `/eventbox give`, `/shop add\|remove\|list`, `/donor add\|remove\|list`, `/homeadmin`, `/backup`), 인원수 제한 우회 등 |
 
 ## 주요 설정 (config.yml)
 
@@ -213,7 +217,7 @@
 
 두 종류의 DB로 나뉩니다:
 
-- **게임플레이 DB** (인스턴스마다 완전히 별도 파일 — `pillage.db`(전체 서버), `hub.db`(허브), 미니서버마다 `instance-<id>.db`): `teams`, `team_members`, `homes`, `last_locations`, `trade_log`, `kill_log`, `tp_log`, `player_stats`, `death_locations`, `daily_rewards`, `playtime_rewards`, `economy`, `shop_offers`, `player_inventory`(인스턴스별 인벤토리 스냅샷), `player_position`(인스턴스별 마지막 위치), `player_vitals`(인스턴스별 체력·배고픔 스냅샷), `player_effects`(인스턴스별 물약 효과 스냅샷). 미니서버를 만들면 이 테이블들이 전부 빈 상태인 새 파일로 시작합니다.
+- **게임플레이 DB** (인스턴스마다 완전히 별도 파일 — `pillage.db`(전체 서버), `hub.db`(허브), 미니서버마다 `instance-<id>.db`): `teams`, `team_members`, `homes`, `last_locations`, `trade_log`, `kill_log`, `tp_log`, `player_stats`, `death_locations`, `daily_rewards`, `playtime_rewards`, `economy`, `shop_offers`, `player_inventory`(인스턴스별 인벤토리 스냅샷), `player_position`(인스턴스별 마지막 위치), `player_vitals`(인스턴스별 체력·배고픔 스냅샷), `player_effects`(인스턴스별 물약 효과 스냅샷), `home_settings`(인스턴스별 홈 기능 on/off). 미니서버를 만들면 이 테이블들이 전부 빈 상태인 새 파일로 시작합니다.
 - **글로벌 DB** (`global.db` 하나, 모든 인스턴스가 공유): `donors`, `donor_pets`, `hall_of_fame`, `hall_of_fame_meta`, `ban_log`, `report_log`, `instances`(미니서버 목록), `player_last_instance`(플레이어별 마지막 접속 서버), `event_box_claims`(플레이어별 미수령 이벤트 상자 개수), `event_box_opens`(플레이어별 누적 개봉 횟수, 5개마다 확정 OP 판정용). 후원자 등급이나 차단 기록처럼 인스턴스를 넘나들어도 유지되어야 하는 데이터입니다.
 
 ## 구현 현황

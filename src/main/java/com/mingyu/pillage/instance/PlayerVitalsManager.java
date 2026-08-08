@@ -17,6 +17,11 @@ public final class PlayerVitalsManager {
     }
 
     public void save(Player player) {
+        // A player is never legitimately "at 0 HP" on purpose - that's always a dead-but-not-
+        // yet-respawned snapshot caught mid-transition. Saving it would mean the next time they
+        // enter this instance, restore() hands them back a corpse's health instead of resuming
+        // normally - so just leave whatever was already saved untouched instead.
+        if (player.isDead() || player.getHealth() <= 0) return;
         dao.save(player.getUniqueId(), player.getHealth(), player.getFoodLevel(),
                 player.getSaturation(), player.getExhaustion());
     }
@@ -25,7 +30,9 @@ public final class PlayerVitalsManager {
         var saved = dao.load(player.getUniqueId());
         double maxHealth = player.getAttribute(Attribute.MAX_HEALTH) != null
                 ? player.getAttribute(Attribute.MAX_HEALTH).getValue() : 20.0;
-        if (saved.isPresent()) {
+        // Same reasoning as save(): a stored 0-or-below health can only be a leftover corrupted
+        // snapshot, never a legitimate one - treat it as "nothing saved" rather than restoring it.
+        if (saved.isPresent() && saved.get().health() > 0) {
             player.setHealth(Math.min(saved.get().health(), maxHealth));
             player.setFoodLevel(saved.get().foodLevel());
             player.setSaturation(saved.get().saturation());

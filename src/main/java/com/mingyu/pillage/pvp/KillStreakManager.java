@@ -1,7 +1,6 @@
 package com.mingyu.pillage.pvp;
 
 import com.mingyu.pillage.util.Msg;
-import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
 import java.util.HashMap;
@@ -18,7 +17,11 @@ public final class KillStreakManager {
         int streak = streaks.merge(killer.getUniqueId(), 1, Integer::sum);
         for (int milestone : MILESTONES) {
             if (streak == milestone) {
-                Bukkit.broadcast(Msg.of("&c&l" + killer.getName() + " &6님이 &e" + milestone + "연킬&6을 달성했습니다!"));
+                // Instance-local, not server-wide - see PvpListener's kill feed for why.
+                var message = Msg.of("&c&l" + killer.getName() + " &6님이 &e" + milestone + "연킬&6을 달성했습니다!");
+                for (Player online : killer.getWorld().getPlayers()) {
+                    online.sendMessage(message);
+                }
             }
         }
     }

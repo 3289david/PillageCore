@@ -44,7 +44,7 @@ public final class PillageHelpCommand implements CommandExecutor {
                     "&7- 팀은 생성 직후부터 언제든 공격받을 수 있습니다.",
                     "&7- 팀이 공격받으면 팀 전체에 경고가 뜨고, 레이드 중 공격 측이 일정 킬 이상 달성하면 '약탈 성공', 아니면 팀이 '방어 성공'으로 기록됩니다.",
                     "&7- 죽으면 드롭 아이템이 바닥에 흩어집니다(커스텀 사망 상자 없음).",
-                    "&7- 5/10/20 연킬은 전체 공지됩니다."
+                    "&7- 5/10/20 연킬은 공지됩니다 (그 킬이 일어난 서버에만 표시, 다른 서버엔 안 보임)."
             ),
             List.of(
                     "&6[통계/QoL]",
@@ -78,6 +78,8 @@ public final class PillageHelpCommand implements CommandExecutor {
                     "&e/eventbox give <player> [수량] &f- 이벤트 상자 지급 예약 (오프라인/다른 서버여도 가능, /eventbox get 으로 수령)",
                     "&e/shop add <내는아이템> <내는수량> <받는아이템> <받는수량> &f- 상점 항목 추가",
                     "&e/shop remove <id> &f, &e/shop list &f- 상점 항목 삭제/조회",
+                    "&e/homeadmin <on|off> &f- 지금 서 있는 서버에서만 홈 기능 켜기/끄기",
+                    "&e/backup &f- 지금 서버의 월드+접속자 인벤토리 즉시 백업 (자동/예약 아님)",
                     "&e/anticheat &f설정은 config.yml 의 anticheat 섹션에서 조절 (기본: 경고만, 매우 널널)"
             ),
             List.of(

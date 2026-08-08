@@ -1,5 +1,6 @@
 package com.mingyu.pillage;
 
+import com.mingyu.pillage.admin.BackupCommand;
 import com.mingyu.pillage.admin.BanCommand;
 import com.mingyu.pillage.admin.InspectCommand;
 import com.mingyu.pillage.admin.InspectListener;
@@ -25,6 +26,7 @@ import com.mingyu.pillage.data.dao.BanLogDao;
 import com.mingyu.pillage.data.dao.DeathLocationDao;
 import com.mingyu.pillage.data.dao.EconomyDao;
 import com.mingyu.pillage.data.dao.HomeDao;
+import com.mingyu.pillage.data.dao.HomeSettingsDao;
 import com.mingyu.pillage.data.dao.InstanceDao;
 import com.mingyu.pillage.data.dao.KillLogDao;
 import com.mingyu.pillage.data.dao.LastLocationDao;
@@ -110,6 +112,7 @@ import com.mingyu.pillage.tp.TpManager;
 import com.mingyu.pillage.tp.TpMoveListener;
 import com.mingyu.pillage.tp.command.BackCommand;
 import com.mingyu.pillage.tp.command.DelHomeCommand;
+import com.mingyu.pillage.tp.command.HomeAdminCommand;
 import com.mingyu.pillage.tp.command.HomeCommand;
 import com.mingyu.pillage.tp.command.SetHomeCommand;
 import com.mingyu.pillage.tp.command.SpawnCommand;
@@ -154,6 +157,7 @@ public final class PillageCore extends JavaPlugin {
 
         TeamDao teamDao = new TeamDao(gameplayDb);
         HomeDao homeDao = new HomeDao(gameplayDb);
+        HomeSettingsDao homeSettingsDao = new HomeSettingsDao(gameplayDb);
         LastLocationDao lastLocationDao = new LastLocationDao(gameplayDb);
         TradeLogDao tradeLogDao = new TradeLogDao(gameplayDb);
         KillLogDao killLogDao = new KillLogDao(gameplayDb);
@@ -273,7 +277,7 @@ public final class PillageCore extends JavaPlugin {
         registerCommands(teamChatService, spawnService, killLogDao, reportLogDao, banLogDao, tpLogDao, tradeLogDao,
                 statsDao, deathLocationDao, staffModeManager, economyManager, rewardManager, eventBoxManager,
                 eventBoxClaimDao, chatManager, shopManager, donorManager, donorNametagManager, donorPetManager,
-                hallOfFameManager);
+                hallOfFameManager, homeSettingsDao);
         registerListeners(teamChatService, killLogDao, statsDao, deathLocationDao, killStreakManager,
                 staffModeManager, eventBoxManager, chatManager, combatTagManager, combatBossBarManager, donorManager,
                 donorNametagManager, donorPetManager, hallOfFameManager, hubNpcManager);
@@ -290,7 +294,7 @@ public final class PillageCore extends JavaPlugin {
                                    ChatManager chatManager,
                                    ShopManager shopManager, DonorManager donorManager,
                                    DonorNametagManager donorNametagManager, DonorPetManager donorPetManager,
-                                   HallOfFameManager hallOfFameManager) {
+                                   HallOfFameManager hallOfFameManager, HomeSettingsDao homeSettingsDao) {
         getCommand("team").setExecutor(new TeamCommand(teamManager, tpManager));
         getCommand("team").setTabCompleter((TeamCommand) getCommand("team").getExecutor());
         getCommand("tc").setExecutor(new TeamChatCommand(teamManager, teamChatService));
@@ -301,13 +305,15 @@ public final class PillageCore extends JavaPlugin {
         getCommand("back").setExecutor(new BackCommand(tpManager));
         getCommand("spawn").setExecutor(new SpawnCommand(tpManager, spawnService));
 
-        HomeCommand homeCommand = new HomeCommand(tpManager);
+        HomeCommand homeCommand = new HomeCommand(tpManager, homeSettingsDao);
         getCommand("home").setExecutor(homeCommand);
         getCommand("home").setTabCompleter(homeCommand);
-        getCommand("sethome").setExecutor(new SetHomeCommand(tpManager));
-        DelHomeCommand delHomeCommand = new DelHomeCommand(tpManager);
+        getCommand("sethome").setExecutor(new SetHomeCommand(tpManager, homeSettingsDao));
+        DelHomeCommand delHomeCommand = new DelHomeCommand(tpManager, homeSettingsDao);
         getCommand("delhome").setExecutor(delHomeCommand);
         getCommand("delhome").setTabCompleter(delHomeCommand);
+        getCommand("homeadmin").setExecutor(new HomeAdminCommand(homeSettingsDao));
+        getCommand("backup").setExecutor(new BackupCommand(this, instanceManager));
 
         getCommand("trade").setExecutor(new TradeCommand(tradeManager));
         getCommand("tradeaccept").setExecutor(new TradeAcceptCommand(tradeManager));

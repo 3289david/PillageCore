@@ -9,7 +9,6 @@ import com.mingyu.pillage.team.Team;
 import com.mingyu.pillage.team.TeamManager;
 import com.mingyu.pillage.util.Msg;
 import net.kyori.adventure.text.Component;
-import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -58,7 +57,11 @@ public final class PvpListener implements Listener {
             Component feed = donorManager.displayName(killer)
                     .append(Msg.of(" &7⚔ &f" + (weapon == null ? "맨손" : weapon) + " &7➤ "))
                     .append(donorManager.displayName(victim));
-            Bukkit.broadcast(feed);
+            // Instance-local, not server-wide - a kill in one mini-server shouldn't show up in
+            // the feed for players on a completely different instance.
+            for (Player online : victim.getWorld().getPlayers()) {
+                online.sendMessage(feed);
+            }
             // Our own kill feed already announced this death - don't also show vanilla's plain-text one.
             event.deathMessage(null);
         }
