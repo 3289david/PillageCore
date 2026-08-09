@@ -1,5 +1,6 @@
 package com.mingyu.pillage.instance;
 
+import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -11,6 +12,7 @@ import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.player.PlayerCommandPreprocessEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerRespawnEvent;
 
 /**
  * Every manager/DAO in this plugin just calls {@code database.connection()}/reads the "current"
@@ -65,5 +67,19 @@ public final class InstanceContextListener implements Listener {
     @EventHandler(priority = EventPriority.LOWEST)
     public void onDamage(EntityDamageByEntityEvent event) {
         instanceManager.enter(event.getEntity().getWorld());
+    }
+
+    // HIGH (not LOWEST) so this runs *after* anything else that might set a bed/anchor respawn
+    // location - it's a final safety net, not the initial resolution. A bed set in a different
+    // instance's world would otherwise respawn the player across instances, which is never
+    // legitimate: each instance is meant to be a fully separate world.
+    @EventHandler(priority = EventPriority.HIGH)
+    public void onRespawn(PlayerRespawnEvent event) {
+        Player player = event.getPlayer();
+        World deathWorld = player.getWorld();
+        if (!event.getRespawnLocation().getWorld().equals(deathWorld)) {
+            event.setRespawnLocation(deathWorld.getSpawnLocation());
+        }
+        instanceManager.enter(deathWorld);
     }
 }

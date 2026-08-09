@@ -35,6 +35,9 @@ import com.mingyu.pillage.data.dao.PlayerInventoryDao;
 import com.mingyu.pillage.data.dao.PlayerPositionDao;
 import com.mingyu.pillage.data.dao.PlayerVitalsDao;
 import com.mingyu.pillage.data.dao.PlayerEffectDao;
+import com.mingyu.pillage.data.dao.PlayerEnderChestDao;
+import com.mingyu.pillage.data.dao.PlayerXpDao;
+import com.mingyu.pillage.data.dao.PlayerGameModeDao;
 import com.mingyu.pillage.data.dao.EventBoxClaimDao;
 import com.mingyu.pillage.data.dao.EventBoxOpenDao;
 import com.mingyu.pillage.data.dao.ReportLogDao;
@@ -78,6 +81,7 @@ import com.mingyu.pillage.instance.MiniServerCommand;
 import com.mingyu.pillage.instance.PlayerInventoryManager;
 import com.mingyu.pillage.instance.PlayerVitalsManager;
 import com.mingyu.pillage.instance.PlayerEffectsManager;
+import com.mingyu.pillage.instance.PlayerExtraStateManager;
 import com.mingyu.pillage.menu.MenuCommand;
 import com.mingyu.pillage.menu.MenuListener;
 import com.mingyu.pillage.menu.MenuService;
@@ -171,6 +175,9 @@ public final class PillageCore extends JavaPlugin {
         PlayerPositionDao playerPositionDao = new PlayerPositionDao(gameplayDb);
         PlayerVitalsDao playerVitalsDao = new PlayerVitalsDao(gameplayDb);
         PlayerEffectDao playerEffectDao = new PlayerEffectDao(gameplayDb);
+        PlayerEnderChestDao playerEnderChestDao = new PlayerEnderChestDao(gameplayDb);
+        PlayerXpDao playerXpDao = new PlayerXpDao(gameplayDb);
+        PlayerGameModeDao playerGameModeDao = new PlayerGameModeDao(gameplayDb);
 
         // These stay on the global database - donor perks and moderation history must not reset
         // just because someone created or joined a mini-server.
@@ -240,11 +247,14 @@ public final class PillageCore extends JavaPlugin {
         PlayerInventoryManager playerInventoryManager = new PlayerInventoryManager(playerInventoryDao);
         PlayerVitalsManager playerVitalsManager = new PlayerVitalsManager(playerVitalsDao);
         PlayerEffectsManager playerEffectsManager = new PlayerEffectsManager(playerEffectDao);
+        PlayerExtraStateManager playerExtraStateManager =
+                new PlayerExtraStateManager(playerXpDao, playerEnderChestDao, playerGameModeDao);
 
         // Provisions the main server + hub + every existing mini-server (each its own world and
         // its own gameplay database file), and loads team/shop state for each of them.
         instanceManager = new InstanceManager(this, gameplayDb, instanceDao, playerInstanceDao, teamManager,
-                shopManager, playerInventoryManager, playerPositionDao, playerVitalsManager, playerEffectsManager);
+                shopManager, playerInventoryManager, playerPositionDao, playerVitalsManager, playerEffectsManager,
+                playerExtraStateManager);
         instanceManager.initialize();
         spawnService.applyMainWorldSpawn();
         hallOfFameManager.initialize(instanceManager.hubWorld());
@@ -277,7 +287,7 @@ public final class PillageCore extends JavaPlugin {
         registerCommands(teamChatService, spawnService, killLogDao, reportLogDao, banLogDao, tpLogDao, tradeLogDao,
                 statsDao, deathLocationDao, staffModeManager, economyManager, rewardManager, eventBoxManager,
                 eventBoxClaimDao, chatManager, shopManager, donorManager, donorNametagManager, donorPetManager,
-                hallOfFameManager, homeSettingsDao);
+                hallOfFameManager, homeSettingsDao, playerInventoryDao);
         registerListeners(teamChatService, killLogDao, statsDao, deathLocationDao, killStreakManager,
                 staffModeManager, eventBoxManager, chatManager, combatTagManager, combatBossBarManager, donorManager,
                 donorNametagManager, donorPetManager, hallOfFameManager, hubNpcManager);
@@ -294,7 +304,8 @@ public final class PillageCore extends JavaPlugin {
                                    ChatManager chatManager,
                                    ShopManager shopManager, DonorManager donorManager,
                                    DonorNametagManager donorNametagManager, DonorPetManager donorPetManager,
-                                   HallOfFameManager hallOfFameManager, HomeSettingsDao homeSettingsDao) {
+                                   HallOfFameManager hallOfFameManager, HomeSettingsDao homeSettingsDao,
+                                   PlayerInventoryDao playerInventoryDao) {
         getCommand("team").setExecutor(new TeamCommand(teamManager, tpManager));
         getCommand("team").setTabCompleter((TeamCommand) getCommand("team").getExecutor());
         getCommand("tc").setExecutor(new TeamChatCommand(teamManager, teamChatService));
@@ -313,7 +324,7 @@ public final class PillageCore extends JavaPlugin {
         getCommand("delhome").setExecutor(delHomeCommand);
         getCommand("delhome").setTabCompleter(delHomeCommand);
         getCommand("homeadmin").setExecutor(new HomeAdminCommand(homeSettingsDao));
-        getCommand("backup").setExecutor(new BackupCommand(this, instanceManager));
+        getCommand("backup").setExecutor(new BackupCommand(this, instanceManager, gameplayDb, playerInventoryDao));
 
         getCommand("trade").setExecutor(new TradeCommand(tradeManager));
         getCommand("tradeaccept").setExecutor(new TradeAcceptCommand(tradeManager));

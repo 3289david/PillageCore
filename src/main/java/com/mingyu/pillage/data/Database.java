@@ -261,6 +261,26 @@ public final class Database {
                 enabled INTEGER NOT NULL DEFAULT 1
             );
         """);
+        st.execute("""
+            CREATE TABLE IF NOT EXISTS player_enderchest (
+                uuid TEXT PRIMARY KEY,
+                contents TEXT NOT NULL
+            );
+        """);
+        st.execute("""
+            CREATE TABLE IF NOT EXISTS player_xp (
+                uuid TEXT PRIMARY KEY,
+                level INTEGER NOT NULL,
+                exp REAL NOT NULL,
+                total_experience INTEGER NOT NULL
+            );
+        """);
+        st.execute("""
+            CREATE TABLE IF NOT EXISTS player_gamemode (
+                uuid TEXT PRIMARY KEY,
+                mode TEXT NOT NULL
+            );
+        """);
     }
 
     private void createGlobalSchema(Statement st) throws SQLException {

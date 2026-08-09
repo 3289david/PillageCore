@@ -54,6 +54,7 @@ public final class InstanceManager {
     private final PlayerPositionDao playerPositionDao;
     private final PlayerVitalsManager playerVitalsManager;
     private final PlayerEffectsManager playerEffectsManager;
+    private final PlayerExtraStateManager playerExtraStateManager;
 
     private final Map<String, InstanceInfo> instancesById = new LinkedHashMap<>();
     private final Map<String, String> instanceIdByWorldName = new LinkedHashMap<>();
@@ -62,7 +63,8 @@ public final class InstanceManager {
     public InstanceManager(JavaPlugin plugin, Database gameplayDb, InstanceDao instanceDao,
                             PlayerInstanceDao playerInstanceDao, TeamManager teamManager, ShopManager shopManager,
                             PlayerInventoryManager playerInventoryManager, PlayerPositionDao playerPositionDao,
-                            PlayerVitalsManager playerVitalsManager, PlayerEffectsManager playerEffectsManager) {
+                            PlayerVitalsManager playerVitalsManager, PlayerEffectsManager playerEffectsManager,
+                            PlayerExtraStateManager playerExtraStateManager) {
         this.plugin = plugin;
         this.gameplayDb = gameplayDb;
         this.instanceDao = instanceDao;
@@ -73,6 +75,7 @@ public final class InstanceManager {
         this.playerPositionDao = playerPositionDao;
         this.playerVitalsManager = playerVitalsManager;
         this.playerEffectsManager = playerEffectsManager;
+        this.playerExtraStateManager = playerExtraStateManager;
     }
 
     public void initialize() {
@@ -255,10 +258,12 @@ public final class InstanceManager {
         playerPositionDao.save(player);
         playerVitalsManager.save(player);
         playerEffectsManager.save(player);
+        playerExtraStateManager.save(player);
         gameplayDb.use(toInstanceId);
         playerInventoryManager.restore(player);
         playerVitalsManager.restore(player);
         playerEffectsManager.restore(player);
+        playerExtraStateManager.restore(player);
         Location destination = playerPositionDao.load(player.getUniqueId());
         // A saved position table only ever legitimately holds locations in that instance's own
         // world - if it doesn't match (a corrupted leftover row from an earlier bug, or the

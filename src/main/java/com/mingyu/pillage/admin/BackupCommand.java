@@ -1,8 +1,12 @@
 package com.mingyu.pillage.admin;
 
+import com.mingyu.pillage.data.Database;
+import com.mingyu.pillage.data.dao.PlayerInventoryDao;
 import com.mingyu.pillage.instance.InstanceManager;
 import com.mingyu.pillage.util.Msg;
+import org.bukkit.Bukkit;
 import org.bukkit.World;
+import org.bukkit.WorldCreator;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -10,31 +14,40 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.util.io.BukkitObjectInputStream;
 import org.bukkit.util.io.BukkitObjectOutputStream;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
 import java.util.Comparator;
+import java.util.UUID;
 import java.util.stream.Stream;
 
-/** On-demand snapshot of the current instance's world (chunks/terrain) and every online player's
- *  inventory in it - for an admin who wants a safety net before something risky, not an
- *  automatic/scheduled backup. Synchronous, so a large world means a brief lag spike - that's an
- *  inherent cost of copying live chunk files, the same tradeoff any backup plugin has. */
+/** On-demand snapshot (and restore) of the current instance's world (chunks/terrain) and every
+ *  online player's inventory in it - for an admin who wants a safety net before something risky,
+ *  not an automatic/scheduled backup. Synchronous, so a large world means a brief lag spike -
+ *  that's an inherent cost of copying live chunk files, the same tradeoff any backup plugin has. */
 public final class BackupCommand implements CommandExecutor {
 
     private final JavaPlugin plugin;
     private final InstanceManager instanceManager;
+    private final Database gameplayDb;
+    private final PlayerInventoryDao playerInventoryDao;
 
-    public BackupCommand(JavaPlugin plugin, InstanceManager instanceManager) {
+    public BackupCommand(JavaPlugin plugin, InstanceManager instanceManager, Database gameplayDb,
+                          PlayerInventoryDao playerInventoryDao) {
         this.plugin = plugin;
         this.instanceManager = instanceManager;
+        this.gameplayDb = gameplayDb;
+        this.playerInventoryDao = playerInventoryDao;
     }
 
     @Override
@@ -48,21 +61,43 @@ public final class BackupCommand implements CommandExecutor {
             return true;
         }
 
+        if (args.length >= 1 && args[0].equalsIgnoreCase("list")) {
+            list(player);
+            return true;
+        }
+        if (args.length >= 1 && args[0].equalsIgnoreCase("restore")) {
+            if (args.length < 2) {
+                sender.sendMessage(Msg.of("&c사용법: /backup restore <백업이름> [confirm]"));
+                return true;
+            }
+            restore(player, args[1], args.length >= 3 && args[2].equalsIgnoreCase("confirm"));
+            return true;
+        }
+
+        create(player);
+        return true;
+    }
+
+    private File backupsRoot() {
+        return new File(plugin.getDataFolder(), "backups");
+    }
+
+    private void create(Player player) {
         World world = player.getWorld();
         String instanceId = instanceManager.resolveInstanceId(world);
         String timestamp = java.time.LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
-        File backupDir = new File(new File(plugin.getDataFolder(), "backups"), instanceId + "_" + timestamp);
+        File backupDir = new File(backupsRoot(), instanceId + "_" + timestamp);
 
-        sender.sendMessage(Msg.of("&e백업을 시작합니다... (월드 크기에 따라 잠깐 서버가 멈출 수 있습니다)"));
+        player.sendMessage(Msg.of("&e백업을 시작합니다... (월드 크기에 따라 잠깐 서버가 멈출 수 있습니다)"));
 
         world.save();
 
         try {
             copyDirectory(world.getWorldFolder().toPath(), new File(backupDir, "world").toPath());
         } catch (IOException e) {
-            sender.sendMessage(Msg.of("&c월드 백업에 실패했습니다: " + e.getMessage()));
+            player.sendMessage(Msg.of("&c월드 백업에 실패했습니다: " + e.getMessage()));
             plugin.getLogger().warning("[Backup] world copy failed: " + e.getMessage());
-            return true;
+            return;
         }
 
         File inventoryDir = new File(backupDir, "inventories");
@@ -74,9 +109,135 @@ public final class BackupCommand implements CommandExecutor {
             }
         }
 
-        sender.sendMessage(Msg.of("&a백업 완료! &7(" + backupDir.getName() + ", 인벤토리 " + savedInventories + "명 저장됨)"));
+        player.sendMessage(Msg.of("&a백업 완료! &7(" + backupDir.getName() + ", 인벤토리 " + savedInventories + "명 저장됨)"));
         plugin.getLogger().info("[Backup] " + player.getName() + " backed up instance " + instanceId + " to " + backupDir);
-        return true;
+    }
+
+    private void list(Player player) {
+        String instanceId = instanceManager.resolveInstanceId(player.getWorld());
+        File[] entries = backupsRoot().listFiles();
+        if (entries == null) entries = new File[0];
+        String prefix = instanceId + "_";
+        String[] names = Arrays.stream(entries)
+                .filter(File::isDirectory)
+                .map(File::getName)
+                .filter(name -> name.startsWith(prefix))
+                .sorted(Comparator.reverseOrder())
+                .toArray(String[]::new);
+
+        if (names.length == 0) {
+            player.sendMessage(Msg.of("&7이 서버(현재 인스턴스)의 백업이 없습니다."));
+            return;
+        }
+        player.sendMessage(Msg.of("&e이 서버의 백업 목록 (" + names.length + "개):"));
+        for (String name : names) {
+            player.sendMessage(Msg.of("&7- " + name));
+        }
+    }
+
+    /** Overwrites the current instance's live world with a backup, and queues each backed-up
+     *  player's inventory to be handed back the next time they enter this instance (via the
+     *  existing switchTo() save/restore flow - no need to special-case "currently online"). This
+     *  destroys whatever is currently in the world, so it requires an explicit "confirm" argument
+     *  and always kicks everyone present out to the hub first. */
+    private void restore(Player admin, String backupName, boolean confirmed) {
+        String instanceId = instanceManager.resolveInstanceId(admin.getWorld());
+        File backupDir = new File(backupsRoot(), backupName);
+        File worldSource = new File(backupDir, "world");
+
+        if (!backupDir.isDirectory() || !worldSource.isDirectory()) {
+            admin.sendMessage(Msg.of("&c그런 백업을 찾을 수 없습니다: " + backupName));
+            return;
+        }
+        if (!backupName.startsWith(instanceId + "_")) {
+            admin.sendMessage(Msg.of("&c이 백업은 현재 서버(인스턴스)의 것이 아닙니다. 복원하려는 서버에 직접 들어가서 실행하세요."));
+            return;
+        }
+        if (!confirmed) {
+            admin.sendMessage(Msg.of("&c경고: 이 작업은 현재 서버의 월드를 백업 시점으로 되돌리며 되돌릴 수 없습니다."));
+            admin.sendMessage(Msg.of("&c정말 실행하려면: &f/backup restore " + backupName + " confirm"));
+            return;
+        }
+
+        World world = admin.getWorld();
+        String worldName = world.getName();
+
+        admin.sendMessage(Msg.of("&e복원을 시작합니다... 이 서버에 있던 플레이어는 모두 허브로 이동합니다."));
+        for (Player online : world.getPlayers()) {
+            online.sendMessage(Msg.of("&e관리자가 이 서버를 백업 시점으로 복원하고 있어 허브로 이동합니다."));
+            instanceManager.teleportToHub(online);
+        }
+
+        if (!Bukkit.unloadWorld(world, false)) {
+            admin.sendMessage(Msg.of("&c월드를 언로드하지 못해 복원을 중단했습니다."));
+            return;
+        }
+
+        File liveWorldFolder = new File(Bukkit.getWorldContainer(), worldName);
+        deleteDirectory(liveWorldFolder);
+
+        try {
+            copyDirectory(worldSource.toPath(), liveWorldFolder.toPath());
+        } catch (IOException e) {
+            admin.sendMessage(Msg.of("&c월드 복원 중 오류: " + e.getMessage() + " (월드가 손상되었을 수 있습니다!)"));
+            plugin.getLogger().severe("[Backup] restore copy failed for " + worldName + ": " + e.getMessage());
+            new WorldCreator(worldName).createWorld();
+            return;
+        }
+
+        new WorldCreator(worldName).createWorld();
+
+        // The world reload doesn't touch the gameplay database at all - re-assert the instance
+        // pointer anyway since teleportToHub() above switched it to the hub's database.
+        gameplayDb.use(instanceId);
+
+        File inventoryDir = new File(backupDir, "inventories");
+        int restoredInventories = 0;
+        File[] files = inventoryDir.listFiles();
+        if (files != null) {
+            for (File file : files) {
+                if (restoreInventory(file)) {
+                    restoredInventories++;
+                }
+            }
+        }
+
+        admin.sendMessage(Msg.of("&a복원 완료! &7(" + backupName + ", 인벤토리 " + restoredInventories
+                + "명분 예약됨 - 해당 플레이어가 이 서버에 다음에 들어올 때 적용됩니다)"));
+        plugin.getLogger().info("[Backup] " + admin.getName() + " restored instance " + instanceId + " from " + backupName);
+    }
+
+    private boolean restoreInventory(File file) {
+        String fileName = file.getName();
+        int underscore = fileName.indexOf('_');
+        if (underscore <= 0) return false;
+        UUID uuid;
+        try {
+            uuid = UUID.fromString(fileName.substring(0, underscore));
+        } catch (IllegalArgumentException e) {
+            return false;
+        }
+
+        try (FileInputStream fileIn = new FileInputStream(file);
+             BukkitObjectInputStream in = new BukkitObjectInputStream(fileIn)) {
+            ItemStack[] contents = readItems(in);
+            ItemStack[] armor = readItems(in);
+            ItemStack offhand = (ItemStack) in.readObject();
+            playerInventoryDao.save(uuid, contents, armor, offhand);
+            return true;
+        } catch (IOException | ClassNotFoundException e) {
+            plugin.getLogger().warning("[Backup] inventory restore failed for " + fileName + ": " + e.getMessage());
+            return false;
+        }
+    }
+
+    private ItemStack[] readItems(BukkitObjectInputStream in) throws IOException, ClassNotFoundException {
+        int length = in.readInt();
+        ItemStack[] items = new ItemStack[length];
+        for (int i = 0; i < length; i++) {
+            items[i] = (ItemStack) in.readObject();
+        }
+        return items;
     }
 
     private boolean saveInventory(Player player, File inventoryDir) {
@@ -115,6 +276,20 @@ public final class BackupCommand implements CommandExecutor {
                     Files.copy(path, destination, StandardCopyOption.REPLACE_EXISTING);
                 }
             }
+        }
+    }
+
+    private void deleteDirectory(File folder) {
+        if (!folder.exists()) return;
+        try (Stream<Path> paths = Files.walk(folder.toPath())) {
+            paths.sorted(Comparator.reverseOrder()).forEach(path -> {
+                try {
+                    Files.delete(path);
+                } catch (IOException ignored) {
+                }
+            });
+        } catch (IOException e) {
+            plugin.getLogger().warning("[Backup] 월드 폴더 삭제 실패: " + folder + " (" + e.getMessage() + ")");
         }
     }
 }

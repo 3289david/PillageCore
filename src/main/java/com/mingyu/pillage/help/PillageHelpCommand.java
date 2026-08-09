@@ -80,6 +80,7 @@ public final class PillageHelpCommand implements CommandExecutor {
                     "&e/shop remove <id> &f, &e/shop list &f- 상점 항목 삭제/조회",
                     "&e/homeadmin <on|off> &f- 지금 서 있는 서버에서만 홈 기능 켜기/끄기",
                     "&e/backup &f- 지금 서버의 월드+접속자 인벤토리 즉시 백업 (자동/예약 아님)",
+                    "&e/backup list &f- 지금 서버의 백업 목록, &e/backup restore <이름> confirm &f- 복원(되돌릴 수 없음)",
                     "&e/anticheat &f설정은 config.yml 의 anticheat 섹션에서 조절 (기본: 경고만, 매우 널널)"
             ),
             List.of(
@@ -102,8 +103,8 @@ public final class PillageHelpCommand implements CommandExecutor {
                     "&e/mini join <이름> &f- 기존 미니서버에 입장",
                     "&e/mini list &f- 미니서버 목록, &e/mini info &f- 지금 있는 서버 정보",
                     "&e/mini delete [이름] &f- 삭제 (관리자만, 이름 생략시 지금 있는 서버)",
-                    "&7- 미니서버는 팀/경제(잔액)/통계(킬뎃)/홈/상점/인벤토리/체력·배고픔/물약효과가 전체",
-                    "&7 서버·다른 미니서버와 완전히 분리된 새 세계입니다. 이 서버의 모든 기능을 그대로 사용할 수 있습니다.",
+                    "&7- 미니서버는 팀/경제(잔액)/통계(킬뎃)/홈/상점/인벤토리/엔더상자/경험치/게임모드/체력·배고픔/물약효과가",
+                    "&7 전체 서버·다른 미니서버와 완전히 분리된 새 세계입니다. 이 서버의 모든 기능을 그대로 사용할 수 있습니다.",
                     "&7- 서버를 옮기면 인벤토리도 그 서버 것으로 바뀌고, 같은 서버로 돌아오면",
                     "&7 떠날 때 그대로 복원됩니다 (새 미니서버는 항상 빈 인벤토리로 시작).",
                     "&7- 접속하면 마지막으로 있던 서버(전체/미니서버)에 자동으로 이어서 스폰됩니다.",
