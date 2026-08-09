@@ -59,6 +59,7 @@ public final class InstanceManager {
     private final Map<String, InstanceInfo> instancesById = new LinkedHashMap<>();
     private final Map<String, String> instanceIdByWorldName = new LinkedHashMap<>();
     private String mainWorldName;
+    private boolean hubEnabled;
 
     public InstanceManager(JavaPlugin plugin, Database gameplayDb, InstanceDao instanceDao,
                             PlayerInstanceDao playerInstanceDao, TeamManager teamManager, ShopManager shopManager,
@@ -79,6 +80,8 @@ public final class InstanceManager {
     }
 
     public void initialize() {
+        hubEnabled = plugin.getConfig().getBoolean("hub.enabled", true);
+
         mainWorldName = plugin.getConfig().getString("spawn.world", "world");
         instanceIdByWorldName.put(mainWorldName, MAIN_ID);
         gameplayDb.open(MAIN_ID, "pillage.db");
@@ -86,36 +89,42 @@ public final class InstanceManager {
         teamManager.loadCurrentInstance();
         shopManager.loadCurrentInstance();
 
-        World hubWorld = Bukkit.getWorld(HUB_WORLD_NAME);
-        if (hubWorld == null) {
-            hubWorld = new WorldCreator(HUB_WORLD_NAME)
-                    .type(WorldType.FLAT)
-                    .environment(World.Environment.NORMAL)
-                    .createWorld();
-        }
-        int groundY = hubWorld.getHighestBlockYAt(0, 0);
-        hubWorld.setSpawnLocation(0, groundY + 1, 0);
-        instanceIdByWorldName.put(HUB_WORLD_NAME, HUB_ID);
-        gameplayDb.open(HUB_ID, "hub.db");
-        gameplayDb.use(HUB_ID);
-        teamManager.loadCurrentInstance();
-        shopManager.loadCurrentInstance();
+        if (hubEnabled) {
+            World hubWorld = Bukkit.getWorld(HUB_WORLD_NAME);
+            if (hubWorld == null) {
+                hubWorld = new WorldCreator(HUB_WORLD_NAME)
+                        .type(WorldType.FLAT)
+                        .environment(World.Environment.NORMAL)
+                        .createWorld();
+            }
+            int groundY = hubWorld.getHighestBlockYAt(0, 0);
+            hubWorld.setSpawnLocation(0, groundY + 1, 0);
+            instanceIdByWorldName.put(HUB_WORLD_NAME, HUB_ID);
+            gameplayDb.open(HUB_ID, "hub.db");
+            gameplayDb.use(HUB_ID);
+            teamManager.loadCurrentInstance();
+            shopManager.loadCurrentInstance();
 
-        // The hub is a lobby, not a place to fight monsters or wrangle animals: always daytime,
-        // no natural mob spawning at all (HubMobGuardListener backs this up event-by-event too,
-        // since setSpawnFlags alone doesn't stop every edge case like flat-world slimes).
-        hubWorld.setGameRule(GameRule.DO_DAYLIGHT_CYCLE, false);
-        hubWorld.setTime(6000);
-        hubWorld.setSpawnFlags(false, false);
-        hubWorld.getEntitiesByClass(Monster.class).forEach(org.bukkit.entity.Entity::remove);
-        hubWorld.getEntitiesByClass(Slime.class).forEach(org.bukkit.entity.Entity::remove);
-        hubWorld.getEntitiesByClass(Animals.class).forEach(org.bukkit.entity.Entity::remove);
+            // The hub is a lobby, not a place to fight monsters or wrangle animals: always daytime,
+            // no natural mob spawning at all (HubMobGuardListener backs this up event-by-event too,
+            // since setSpawnFlags alone doesn't stop every edge case like flat-world slimes).
+            hubWorld.setGameRule(GameRule.DO_DAYLIGHT_CYCLE, false);
+            hubWorld.setTime(6000);
+            hubWorld.setSpawnFlags(false, false);
+            hubWorld.getEntitiesByClass(Monster.class).forEach(org.bukkit.entity.Entity::remove);
+            hubWorld.getEntitiesByClass(Slime.class).forEach(org.bukkit.entity.Entity::remove);
+            hubWorld.getEntitiesByClass(Animals.class).forEach(org.bukkit.entity.Entity::remove);
+        }
 
         for (InstanceInfo info : instanceDao.loadAll()) {
             loadInstanceWorld(info);
         }
         gameplayDb.use(MAIN_ID);
         plugin.getLogger().info("[Instance] 미니서버 " + instancesById.size() + "개를 불러왔습니다.");
+    }
+
+    public boolean isHubEnabled() {
+        return hubEnabled;
     }
 
     public World hubWorld() {
@@ -212,12 +221,13 @@ public final class InstanceManager {
         return info;
     }
 
-    /** Kicks everyone inside back to the hub, then unloads and permanently deletes the world + its database. */
+    /** Kicks everyone inside back to the hub (or the main server, if running without one), then
+     *  unloads and permanently deletes the world + its database. */
     public void delete(InstanceInfo info) {
         World world = Bukkit.getWorld(info.worldName());
         if (world != null) {
             for (Player player : world.getPlayers()) {
-                teleportToHub(player);
+                sendToLobbyOrMain(player);
             }
         }
         gameplayDb.closeInstance(info.id());
@@ -302,16 +312,19 @@ public final class InstanceManager {
     public void sendToLastInstanceOrHub(Player player) {
         String lastId = playerInstanceDao.get(player.getUniqueId());
         if (lastId == null) {
-            switchTo(player, HUB_ID, hubSpawn());
+            sendToLobbyOrMain(player);
             return;
         }
 
         String actualId = resolveInstanceId(player.getWorld());
         if (HUB_ID.equals(lastId)) {
-            if (actualId.equals(HUB_ID)) {
+            if (hubEnabled && actualId.equals(HUB_ID)) {
                 gameplayDb.use(HUB_ID);
             } else {
-                switchTo(player, HUB_ID, hubSpawn());
+                // Either they need the usual resync, or the hub they last stood in has since been
+                // turned off entirely (hub.enabled: false) - either way there's no hub to return
+                // to, so this falls back the same way a deleted mini-server would.
+                sendToLobbyOrMain(player);
             }
             return;
         }
@@ -325,14 +338,26 @@ public final class InstanceManager {
         }
         InstanceInfo info = instancesById.get(lastId);
         if (info == null) {
-            // Their mini-server was deleted while they were offline - fall back to the hub.
-            switchTo(player, HUB_ID, hubSpawn());
+            // Their mini-server was deleted while they were offline - fall back to the lobby.
+            sendToLobbyOrMain(player);
             return;
         }
         if (actualId.equals(lastId)) {
             gameplayDb.use(lastId);
         } else {
             switchTo(player, lastId, Bukkit.getWorld(info.worldName()).getSpawnLocation());
+        }
+    }
+
+    /** Wherever "send them to the hub" was previously an unconditional fallback destination - a
+     *  brand-new player's first spawn, a deleted mini-server's leftover occupants - this falls
+     *  back to the main server instead when running with hub.enabled: false, since there's no
+     *  lobby world to land them in. */
+    public void sendToLobbyOrMain(Player player) {
+        if (hubEnabled) {
+            switchTo(player, HUB_ID, hubSpawn());
+        } else {
+            switchTo(player, MAIN_ID, mainSpawn());
         }
     }
 }

@@ -82,7 +82,8 @@ public final class PillageHelpCommand implements CommandExecutor {
                     "&e/backup &f- 지금 서버의 월드+접속자 인벤토리 즉시 백업 (자동/예약 아님)",
                     "&e/backup list &f- 지금 서버의 백업 목록, &e/backup restore <이름> confirm &f- 복원(되돌릴 수 없음)",
                     "&e/restart &f- 5분 카운트다운(1분마다 알림, 마지막 10초 화면 중앙 표시) 뒤 전 서버 플레이어를 내보내고 재시작",
-                    "&e/anticheat &f설정은 config.yml 의 anticheat 섹션에서 조절 (기본: 경고만, 매우 널널)"
+                    "&e/anticheat &f설정은 config.yml 의 anticheat 섹션에서 조절 (기본: 경고만, 매우 널널)",
+                    "&econfig.yml hub.enabled &f- false로 바꾸면 허브 없이 운영 (재시작 필요, 자세히는 README 참고)"
             ),
             List.of(
                     "&6[후원자] &7(결제 연동 없음 - 관리자가 수동으로 등록)",

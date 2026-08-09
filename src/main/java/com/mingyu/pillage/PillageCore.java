@@ -129,6 +129,7 @@ import com.mingyu.pillage.trade.TradeManager;
 import com.mingyu.pillage.trade.command.TradeAcceptCommand;
 import com.mingyu.pillage.trade.command.TradeCommand;
 import com.mingyu.pillage.trade.command.TradeDenyCommand;
+import org.bukkit.World;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.Set;
@@ -258,10 +259,17 @@ public final class PillageCore extends JavaPlugin {
                 playerExtraStateManager);
         instanceManager.initialize();
         spawnService.applyMainWorldSpawn();
-        hallOfFameManager.initialize(instanceManager.hubWorld());
+        // With no hub, the monument becomes part of the main server itself instead of living in
+        // a separate lobby world - there's nowhere else shared across every player to put it.
+        World hallOfFameWorld = instanceManager.isHubEnabled()
+                ? instanceManager.hubWorld()
+                : instanceManager.mainSpawn().getWorld();
+        hallOfFameManager.initialize(hallOfFameWorld);
 
         HubNpcManager hubNpcManager = new HubNpcManager(this);
-        hubNpcManager.ensureSpawned(instanceManager.hubSpawn());
+        if (instanceManager.isHubEnabled()) {
+            hubNpcManager.ensureSpawned(instanceManager.hubSpawn());
+        }
 
         playtimeTracker = new PlaytimeTracker(this, statsDao, instanceManager);
         playtimeTracker.start();

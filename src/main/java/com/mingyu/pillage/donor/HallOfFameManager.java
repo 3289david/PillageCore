@@ -58,14 +58,15 @@ public final class HallOfFameManager {
         return markerKey;
     }
 
-    /** The monument always lives in the hub world (the shared lobby every player passes through),
-     *  never in a specific mini-server, so it stays a single global showcase. */
-    public void initialize(World hubWorld) {
+    /** The monument lives in whichever world every player is guaranteed to pass through - the hub
+     *  if one exists, otherwise the main server itself - never in a specific mini-server, so it
+     *  stays a single global showcase. */
+    public void initialize(World world) {
         Location saved = metaDao.loadOrigin();
         boolean firstBuild = saved == null;
 
         if (firstBuild) {
-            origin = computeOrigin(hubWorld);
+            origin = computeOrigin(world);
             buildPlatform(origin);
             metaDao.saveOrigin(origin);
             for (UUID uuid : donorManager.all().keySet()) {

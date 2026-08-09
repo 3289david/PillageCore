@@ -162,10 +162,11 @@ public final class BackupCommand implements CommandExecutor {
         World world = admin.getWorld();
         String worldName = world.getName();
 
-        admin.sendMessage(Msg.of("&e복원을 시작합니다... 이 서버에 있던 플레이어는 모두 허브로 이동합니다."));
+        boolean hasHub = instanceManager.isHubEnabled();
+        admin.sendMessage(Msg.of("&e복원을 시작합니다... 이 서버에 있던 플레이어는 모두 " + (hasHub ? "허브" : "메인 서버") + "로 이동합니다."));
         for (Player online : world.getPlayers()) {
-            online.sendMessage(Msg.of("&e관리자가 이 서버를 백업 시점으로 복원하고 있어 허브로 이동합니다."));
-            instanceManager.teleportToHub(online);
+            online.sendMessage(Msg.of("&e관리자가 이 서버를 백업 시점으로 복원하고 있어 " + (hasHub ? "허브" : "메인 서버") + "로 이동합니다."));
+            instanceManager.sendToLobbyOrMain(online);
         }
 
         if (!Bukkit.unloadWorld(world, false)) {
