@@ -327,6 +327,7 @@ public final class PillageCore extends JavaPlugin {
         getCommand("homeadmin").setExecutor(new HomeAdminCommand(homeSettingsDao));
         getCommand("backup").setExecutor(new BackupCommand(this, instanceManager, gameplayDb, playerInventoryDao));
         getCommand("restart").setExecutor(new RestartCommand(this));
+        reclaimBuiltinCommand("restart");
 
         getCommand("trade").setExecutor(new TradeCommand(tradeManager));
         getCommand("tradeaccept").setExecutor(new TradeAcceptCommand(tradeManager));
@@ -372,6 +373,29 @@ public final class PillageCore extends JavaPlugin {
         MiniServerCommand miniServerCommand = new MiniServerCommand(instanceManager, tpManager);
         getCommand("mini").setExecutor(miniServerCommand);
         getCommand("mini").setTabCompleter(miniServerCommand);
+    }
+
+    /** Spigot registers its own built-in "restart" (and a few other) commands before any plugin
+     *  loads, and Bukkit's CommandMap keeps whichever command registered a label FIRST as the
+     *  plain, unprefixed owner - a plugin.yml command of the same name normally only ever becomes
+     *  reachable as "pillagecore:restart", never plain "/restart". This reaches into the server's
+     *  CommandMap after normal registration and forces the plain label back onto our own command,
+     *  the same technique other plugins use to reclaim vanilla/built-in command names. */
+    private void reclaimBuiltinCommand(String label) {
+        try {
+            java.lang.reflect.Field commandMapField = getServer().getClass().getDeclaredField("commandMap");
+            commandMapField.setAccessible(true);
+            org.bukkit.command.CommandMap commandMap = (org.bukkit.command.CommandMap) commandMapField.get(getServer());
+
+            java.lang.reflect.Field knownCommandsField = org.bukkit.command.SimpleCommandMap.class.getDeclaredField("knownCommands");
+            knownCommandsField.setAccessible(true);
+            @SuppressWarnings("unchecked")
+            java.util.Map<String, org.bukkit.command.Command> knownCommands =
+                    (java.util.Map<String, org.bukkit.command.Command>) knownCommandsField.get(commandMap);
+            knownCommands.put(label, getCommand(label));
+        } catch (ReflectiveOperationException | ClassCastException e) {
+            getLogger().warning("[Command] 내장 \"" + label + "\" 명령어를 재정의하지 못했습니다: " + e.getMessage());
+        }
     }
 
     private void registerListeners(TeamChatService teamChatService, KillLogDao killLogDao, StatsDao statsDao,

@@ -81,7 +81,7 @@ public final class PillageHelpCommand implements CommandExecutor {
                     "&e/homeadmin <on|off> &f- 지금 서 있는 서버에서만 홈 기능 켜기/끄기",
                     "&e/backup &f- 지금 서버의 월드+접속자 인벤토리 즉시 백업 (자동/예약 아님)",
                     "&e/backup list &f- 지금 서버의 백업 목록, &e/backup restore <이름> confirm &f- 복원(되돌릴 수 없음)",
-                    "&e/restart &f- 모든 서버(인스턴스)의 플레이어를 전부 내보내고 서버 재시작 (5초 경고 후)",
+                    "&e/restart &f- 5분 카운트다운(1분마다 알림, 마지막 10초 화면 중앙 표시) 뒤 전 서버 플레이어를 내보내고 재시작",
                     "&e/anticheat &f설정은 config.yml 의 anticheat 섹션에서 조절 (기본: 경고만, 매우 널널)"
             ),
             List.of(
