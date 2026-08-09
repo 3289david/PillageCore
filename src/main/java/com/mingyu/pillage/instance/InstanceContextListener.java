@@ -11,6 +11,7 @@ import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.player.PlayerCommandPreprocessEvent;
+import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 
@@ -46,6 +47,16 @@ public final class InstanceContextListener implements Listener {
 
     @EventHandler(priority = EventPriority.LOWEST)
     public void onInteract(PlayerInteractEvent event) {
+        instanceManager.enter(event.getPlayer());
+    }
+
+    // Right-clicking an entity (the hub NPCs, in particular) is a separate event class from
+    // interacting with a block/air - without this, HubNpcListener's teleportToMain() etc. could
+    // run with the shared "current instance" pointer still left wherever some other player's last
+    // action put it, corrupting whichever instance's inventory save that pointer happened to
+    // point at instead of this player's own.
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void onInteractEntity(PlayerInteractEntityEvent event) {
         instanceManager.enter(event.getPlayer());
     }
 

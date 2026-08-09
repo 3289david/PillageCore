@@ -4,11 +4,17 @@ import com.mingyu.pillage.data.dao.HallOfFameDao;
 import com.mingyu.pillage.data.dao.HallOfFameMetaDao;
 import com.mingyu.pillage.util.Msg;
 import org.bukkit.Bukkit;
+import org.bukkit.GameRule;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.World;
+import org.bukkit.WorldCreator;
+import org.bukkit.WorldType;
+import org.bukkit.entity.Animals;
+import org.bukkit.entity.Monster;
+import org.bukkit.entity.Slime;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.data.Bisected;
@@ -30,6 +36,11 @@ import java.util.UUID;
  * Statues are created/removed automatically as /donor add|remove runs.
  */
 public final class HallOfFameManager {
+
+    /** Used only when running without a hub (hub.enabled: false) - a tiny dedicated flat world
+     *  that exists purely to hold the monument, so it never has to share space with real terrain,
+     *  player builds, or mob spawns on the actual main server. */
+    public static final String DEDICATED_WORLD_NAME = "pillage_halloffame";
 
     private static final int ROW_LENGTH = 8;
     private static final int SLOT_SPACING_X = 3;
@@ -56,6 +67,35 @@ public final class HallOfFameManager {
 
     public NamespacedKey markerKey() {
         return markerKey;
+    }
+
+    /** Creates (or loads, on later restarts) the small flat world dedicated to the monument -
+     *  always daytime, no mob spawning, nothing else in it - so it never touches real terrain or
+     *  gets in the way of actual play. Only used when hub.enabled: false. */
+    public World ensureDedicatedWorld() {
+        World world = Bukkit.getWorld(DEDICATED_WORLD_NAME);
+        if (world == null) {
+            world = new WorldCreator(DEDICATED_WORLD_NAME)
+                    .type(WorldType.FLAT)
+                    .environment(World.Environment.NORMAL)
+                    .createWorld();
+        }
+        world.setGameRule(GameRule.DO_DAYLIGHT_CYCLE, false);
+        world.setTime(6000);
+        world.setSpawnFlags(false, false);
+        world.getEntitiesByClass(Monster.class).forEach(org.bukkit.entity.Entity::remove);
+        world.getEntitiesByClass(Slime.class).forEach(org.bukkit.entity.Entity::remove);
+        world.getEntitiesByClass(Animals.class).forEach(org.bukkit.entity.Entity::remove);
+        return world;
+    }
+
+    public boolean isDedicatedWorld(World world) {
+        return world != null && DEDICATED_WORLD_NAME.equals(world.getName());
+    }
+
+    /** Where players are teleported to visit the monument - null until {@link #initialize} has run. */
+    public Location origin() {
+        return origin;
     }
 
     /** The monument lives in whichever world every player is guaranteed to pass through - the hub

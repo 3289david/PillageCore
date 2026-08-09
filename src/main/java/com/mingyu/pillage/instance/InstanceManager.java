@@ -302,51 +302,62 @@ public final class InstanceManager {
         switchTo(player, info.id(), Bukkit.getWorld(info.worldName()).getSpawnLocation());
     }
 
-    /** First-ever join (or a deleted last instance) lands in the hub with a swapped-in inventory;
-     *  otherwise this is a resume - Bukkit already restored the player's position and inventory
-     *  from disk exactly as they left it, so all that's needed is pointing the gameplay database
-     *  at the right instance - but only if the player is actually physically standing in that
-     *  instance's world. If the recorded instance doesn't match reality (state can drift out of
-     *  sync from a bug, or from editing the database by hand), this forces a real switchTo() to
-     *  reconcile everything instead of silently trusting a stale record. */
+    /** First-ever join (or a deleted last instance/turned-off hub) lands in the hub-or-main with a
+     *  swapped-in inventory; otherwise this is a resume - Bukkit already restored the player's
+     *  position and inventory from disk exactly as they left it, so all that's needed is pointing
+     *  the gameplay database at the right instance - but only if the player is actually physically
+     *  standing in that instance's world. If the recorded instance doesn't match reality (state
+     *  can drift out of sync from a bug, or from editing the database by hand), this forces a real
+     *  switchTo() to reconcile everything instead of silently trusting a stale record.
+     *
+     *  <p>Unlike every other instance switch, this one runs from {@code PlayerJoinEvent} rather
+     *  than a command - so it's the one place {@link InstanceContextListener}'s LOWEST-priority
+     *  net (which keeps {@code gameplayDb}'s single, server-wide "current instance" pointer synced
+     *  to whichever player just acted) hasn't already primed the pointer for *this* player before
+     *  {@link #switchTo} runs. Left alone, that pointer would still reflect whatever some other
+     *  already-online player's last action happened to leave it on, so switchTo()'s very first
+     *  step - saving "whatever is currently active" - could silently save this player's real
+     *  inventory into a completely different instance's table (a brand-new player's starting
+     *  inventory, or a returning player's just-loaded one). Every branch below explicitly pins the
+     *  pointer to this player's own last-known instance first, closing that gap. */
     public void sendToLastInstanceOrHub(Player player) {
         String lastId = playerInstanceDao.get(player.getUniqueId());
         if (lastId == null) {
+            // Brand-new identity - their real Bukkit-native inventory belongs under MAIN by
+            // definition, since that's the "true" persistent server everything else branches off.
+            gameplayDb.use(MAIN_ID);
             sendToLobbyOrMain(player);
             return;
         }
 
-        String actualId = resolveInstanceId(player.getWorld());
-        if (HUB_ID.equals(lastId)) {
-            if (hubEnabled && actualId.equals(HUB_ID)) {
-                gameplayDb.use(HUB_ID);
-            } else {
-                // Either they need the usual resync, or the hub they last stood in has since been
-                // turned off entirely (hub.enabled: false) - either way there's no hub to return
-                // to, so this falls back the same way a deleted mini-server would.
-                sendToLobbyOrMain(player);
-            }
-            return;
-        }
-        if (MAIN_ID.equals(lastId)) {
-            if (actualId.equals(MAIN_ID)) {
-                gameplayDb.use(MAIN_ID);
-            } else {
-                switchTo(player, MAIN_ID, mainSpawn());
-            }
-            return;
-        }
-        InstanceInfo info = instancesById.get(lastId);
-        if (info == null) {
-            // Their mini-server was deleted while they were offline - fall back to the lobby.
+        if (HUB_ID.equals(lastId) && !hubEnabled) {
+            // The hub they last stood in has since been turned off entirely - nothing to resync
+            // to, so this falls back the same way a deleted mini-server would.
+            gameplayDb.use(MAIN_ID);
             sendToLobbyOrMain(player);
             return;
         }
-        if (actualId.equals(lastId)) {
-            gameplayDb.use(lastId);
-        } else {
-            switchTo(player, lastId, Bukkit.getWorld(info.worldName()).getSpawnLocation());
+        if (!HUB_ID.equals(lastId) && !MAIN_ID.equals(lastId) && instancesById.get(lastId) == null) {
+            // Their mini-server was deleted while they were offline.
+            gameplayDb.use(MAIN_ID);
+            sendToLobbyOrMain(player);
+            return;
         }
+
+        // lastId is a still-open, still-valid instance - pin the shared pointer to it before
+        // anything else can touch it, so both the fast-path resync below and switchTo()'s save
+        // step are guaranteed to act on the correct instance for this specific player.
+        gameplayDb.use(lastId);
+
+        String actualId = resolveInstanceId(player.getWorld());
+        if (actualId.equals(lastId)) {
+            return;
+        }
+
+        Location fallbackSpawn = HUB_ID.equals(lastId) ? hubSpawn()
+                : MAIN_ID.equals(lastId) ? mainSpawn()
+                : Bukkit.getWorld(instancesById.get(lastId).worldName()).getSpawnLocation();
+        switchTo(player, lastId, fallbackSpawn);
     }
 
     /** Wherever "send them to the hub" was previously an unconditional fallback destination - a

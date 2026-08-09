@@ -101,6 +101,7 @@ public final class PillageHelpCommand implements CommandExecutor {
             List.of(
                     "&6[미니서버] &7(친구들끼리 노는 독립된 약탈 서버)",
                     "&e/hub &f- 허브(로비)로 이동, &e/main &f- 전체 약탈 서버로 이동",
+                    "&e/halloffame &f- 명예의 전당(후원자 동상) 방문, &e/back &f으로 원래 있던 곳으로 복귀",
                     "&e/mini create <이름> &f- 새 미니서버 생성 (만든 사람이 그 서버의 관리자가 됨)",
                     "&e/mini join <이름> &f- 기존 미니서버에 입장",
                     "&e/mini list &f- 미니서버 목록, &e/mini info &f- 지금 있는 서버 정보",

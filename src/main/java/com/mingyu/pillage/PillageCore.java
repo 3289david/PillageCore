@@ -60,6 +60,7 @@ import com.mingyu.pillage.donor.DonorParticleTask;
 import com.mingyu.pillage.donor.DonorPerksListener;
 import com.mingyu.pillage.donor.DonorPetManager;
 import com.mingyu.pillage.donor.HallOfFameListener;
+import com.mingyu.pillage.donor.HallOfFameCommand;
 import com.mingyu.pillage.donor.HallOfFameManager;
 import com.mingyu.pillage.donor.PetCommand;
 import com.mingyu.pillage.donor.StatueCommand;
@@ -259,11 +260,11 @@ public final class PillageCore extends JavaPlugin {
                 playerExtraStateManager);
         instanceManager.initialize();
         spawnService.applyMainWorldSpawn();
-        // With no hub, the monument becomes part of the main server itself instead of living in
-        // a separate lobby world - there's nowhere else shared across every player to put it.
+        // With no hub, the monument gets its own tiny dedicated world instead of the lobby -
+        // never touching real main-server terrain or getting in the way of actual play.
         World hallOfFameWorld = instanceManager.isHubEnabled()
                 ? instanceManager.hubWorld()
-                : instanceManager.mainSpawn().getWorld();
+                : hallOfFameManager.ensureDedicatedWorld();
         hallOfFameManager.initialize(hallOfFameWorld);
 
         HubNpcManager hubNpcManager = new HubNpcManager(this);
@@ -284,7 +285,7 @@ public final class PillageCore extends JavaPlugin {
 
         EventBoxManager eventBoxManager = new EventBoxManager(this, eventBoxOpenDao);
 
-        StaffModeManager staffModeManager = new StaffModeManager(this);
+        StaffModeManager staffModeManager = new StaffModeManager();
 
         ChatManager chatManager = new ChatManager(
                 getConfig().getInt("chat.cooldown-seconds", 2),
@@ -377,6 +378,7 @@ public final class PillageCore extends JavaPlugin {
         getCommand("pet").setExecutor(new PetCommand(donorManager, donorPetManager));
 
         getCommand("hub").setExecutor(new HubCommand(instanceManager, tpManager));
+        getCommand("halloffame").setExecutor(new HallOfFameCommand(tpManager, hallOfFameManager));
         getCommand("main").setExecutor(new MainServerCommand(instanceManager, tpManager));
         MiniServerCommand miniServerCommand = new MiniServerCommand(instanceManager, tpManager);
         getCommand("mini").setExecutor(miniServerCommand);
@@ -420,7 +422,7 @@ public final class PillageCore extends JavaPlugin {
         pm.registerEvents(new InstanceContextListener(instanceManager), this);
         pm.registerEvents(new InstanceJoinListener(instanceManager), this);
         pm.registerEvents(new HubMobGuardListener(instanceManager), this);
-        pm.registerEvents(new HubBuildGuardListener(instanceManager), this);
+        pm.registerEvents(new HubBuildGuardListener(instanceManager, hallOfFameManager), this);
         pm.registerEvents(new HubNpcListener(this, hubNpcManager, instanceManager, tpManager), this);
 
         pm.registerEvents(new FriendlyFireListener(teamManager), this);
@@ -433,7 +435,6 @@ public final class PillageCore extends JavaPlugin {
                 killStreakManager, donorManager), this);
         pm.registerEvents(new MiningTracker(statsDao), this);
         pm.registerEvents(playtimeTracker, this);
-        pm.registerEvents(staffModeManager, this);
         pm.registerEvents(new InspectListener(), this);
         pm.registerEvents(new EventBoxListener(eventBoxManager), this);
         pm.registerEvents(new GlobalChatListener(chatManager, teamManager, donorManager), this);
