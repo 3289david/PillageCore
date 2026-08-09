@@ -185,6 +185,9 @@
 | `/backup` | 지금 서 있는 서버(인스턴스)의 월드(청크)와 접속 중인 플레이어 인벤토리를 즉시 백업 (아래 참고) |
 | `/backup list` | 지금 서 있는 서버의 백업 목록 조회 |
 | `/backup restore <이름> [confirm]` | 백업을 지금 서 있는 서버에 복원 (아래 참고) |
+| `/restart` | 서버 전체(모든 인스턴스)의 플레이어를 전부 내보내고 서버를 재시작 (아래 참고) |
+
+`/restart`는 특정 인스턴스가 아니라 **서버 전체**에 적용되는 명령어입니다 — 실행하면 전체 서버/허브/미니서버 할 것 없이 접속 중인 모든 플레이어에게 5초 경고 메시지가 뜬 뒤 전원 접속이 종료되고 서버가 재시작됩니다. 실제로 새 프로세스가 뜨는지는 서버를 어떤 방식으로 구동하고 있는지(재시작 스크립트 설정 여부, 호스팅사의 자동 재시작 여부)에 달려 있습니다 — 설정된 재시작 스크립트가 없다면 정상적으로 종료만 되고, 이후 다시 켜주는 건 서버를 구동하는 쪽(호스팅 패널 등)의 몫입니다.
 
 `/backup`은 예약/자동 백업이 아니라 관리자가 원하는 시점에 직접 실행하는 즉석 스냅샷입니다. 실행하면 그 순간 월드를 디스크에 강제로 저장한 뒤 `plugins/PillageCore/backups/<인스턴스ID>_<시각>/` 폴더에 월드 전체(`world/`)와 그 서버에 접속 중인 플레이어들의 인벤토리(`inventories/<UUID>_<이름>.dat`)를 복사해둡니다. 월드가 크면 복사하는 동안 서버가 잠깐 멈출 수 있습니다.
 
@@ -204,7 +207,7 @@
 | `pillage.team.*` | true | 팀 명령어 |
 | `pillage.tp.*` | true | TP 명령어 |
 | `pillage.trade.*` | true | 거래 명령어 |
-| `pillage.admin` | op | 안티치트 경고 수신, 관리자 명령어(`/staff`, `/inspect`, `/logs`, `/pillageban`, `/eventbox give`, `/shop add\|remove\|list`, `/donor add\|remove\|list`, `/homeadmin`, `/backup`), 인원수 제한 우회 등 |
+| `pillage.admin` | op | 안티치트 경고 수신, 관리자 명령어(`/staff`, `/inspect`, `/logs`, `/pillageban`, `/eventbox give`, `/shop add\|remove\|list`, `/donor add\|remove\|list`, `/homeadmin`, `/backup`, `/restart`), 인원수 제한 우회 등 |
 
 ## 주요 설정 (config.yml)
 

@@ -47,6 +47,10 @@ commands:
     description: 지금 서 있는 서버의 월드(청크)와 접속 중인 플레이어 인벤토리를 즉시 백업하거나 목록 조회/복원
     usage: /backup [list|restore <이름> [confirm]]
     permission: pillage.admin
+  restart:
+    description: 모든 플레이어를 서버에서 내보내고 서버를 재시작
+    usage: /restart
+    permission: pillage.admin
   trade:
     description: 다른 플레이어에게 거래 요청
     usage: /trade <player>

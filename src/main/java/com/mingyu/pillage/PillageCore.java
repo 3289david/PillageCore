@@ -1,6 +1,7 @@
 package com.mingyu.pillage;
 
 import com.mingyu.pillage.admin.BackupCommand;
+import com.mingyu.pillage.admin.RestartCommand;
 import com.mingyu.pillage.admin.BanCommand;
 import com.mingyu.pillage.admin.InspectCommand;
 import com.mingyu.pillage.admin.InspectListener;
@@ -325,6 +326,7 @@ public final class PillageCore extends JavaPlugin {
         getCommand("delhome").setTabCompleter(delHomeCommand);
         getCommand("homeadmin").setExecutor(new HomeAdminCommand(homeSettingsDao));
         getCommand("backup").setExecutor(new BackupCommand(this, instanceManager, gameplayDb, playerInventoryDao));
+        getCommand("restart").setExecutor(new RestartCommand(this));
 
         getCommand("trade").setExecutor(new TradeCommand(tradeManager));
         getCommand("tradeaccept").setExecutor(new TradeAcceptCommand(tradeManager));
