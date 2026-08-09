@@ -377,7 +377,7 @@ public final class PillageCore extends JavaPlugin {
         getCommand("statue").setExecutor(new StatueCommand(donorManager));
         getCommand("pet").setExecutor(new PetCommand(donorManager, donorPetManager));
 
-        getCommand("hub").setExecutor(new HubCommand(instanceManager, tpManager));
+        getCommand("hub").setExecutor(new HubCommand(instanceManager, tpManager, hallOfFameManager));
         getCommand("halloffame").setExecutor(new HallOfFameCommand(tpManager, hallOfFameManager));
         getCommand("main").setExecutor(new MainServerCommand(instanceManager, tpManager));
         MiniServerCommand miniServerCommand = new MiniServerCommand(instanceManager, tpManager);

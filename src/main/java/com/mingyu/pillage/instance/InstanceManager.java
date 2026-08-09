@@ -242,6 +242,31 @@ public final class InstanceManager {
         new File(plugin.getDataFolder(), "instance-" + info.id() + ".db").delete();
     }
 
+    /** Permanently unloads and deletes the hub world + its database, and writes hub.enabled: false
+     *  into config.yml so it stays off after a restart too - the command-line equivalent of
+     *  manually deleting pillage_hub/hub.db and editing the config by hand. */
+    public void deleteHubWorldAndData() {
+        World hubWorld = Bukkit.getWorld(HUB_WORLD_NAME);
+        if (hubWorld != null) {
+            for (Player player : hubWorld.getPlayers()) {
+                switchTo(player, MAIN_ID, mainSpawn());
+            }
+        }
+        if (gameplayDb.hasInstance(HUB_ID)) {
+            gameplayDb.closeInstance(HUB_ID);
+        }
+        if (hubWorld != null) {
+            Bukkit.unloadWorld(hubWorld, false);
+        }
+        deleteWorldFolder(new File(Bukkit.getWorldContainer(), HUB_WORLD_NAME));
+        new File(plugin.getDataFolder(), "hub.db").delete();
+
+        instanceIdByWorldName.remove(HUB_WORLD_NAME);
+        hubEnabled = false;
+        plugin.getConfig().set("hub.enabled", false);
+        plugin.saveConfig();
+    }
+
     private void deleteWorldFolder(File folder) {
         if (!folder.exists()) return;
         try (Stream<Path> paths = Files.walk(folder.toPath())) {

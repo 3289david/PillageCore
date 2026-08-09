@@ -153,8 +153,8 @@ commands:
     description: 후원자 전용 고양이 펫 커스터마이즈 (후원자 전용)
     usage: /pet <name|variant> <값>
   hub:
-    description: 허브(로비)로 이동
-    usage: /hub
+    description: 허브(로비)로 이동, 또는 delete confirm 으로 허브 자체를 영구 삭제(관리자)
+    usage: /hub [delete confirm]
   main:
     description: 전체 약탈 서버로 이동
     usage: /main

@@ -98,6 +98,30 @@ public final class HallOfFameManager {
         return origin;
     }
 
+    /** Rebuilds the monument in the dedicated world and forgets the old location - used when the
+     *  hub the monument previously lived in is about to be deleted out from under it (see
+     *  {@code /hub delete}). Must be called before the old world is unloaded, since it removes the
+     *  old armor stands/hologram there first. */
+    public void relocateToDedicatedWorld() {
+        if (origin != null && origin.getWorld() != null) {
+            double radius = ROW_LENGTH * SLOT_SPACING_X + MAX_ROWS * ROW_SPACING_Z + 20;
+            for (Entity entity : origin.getWorld().getNearbyEntities(origin, radius, radius, radius)) {
+                if (entity.getType() == EntityType.ARMOR_STAND) {
+                    entity.remove();
+                }
+            }
+        }
+
+        World world = ensureDedicatedWorld();
+        origin = computeOrigin(world);
+        buildPlatform(origin);
+        metaDao.saveOrigin(origin);
+        for (UUID uuid : donorManager.all().keySet()) {
+            createStatueFor(uuid);
+        }
+        plugin.getLogger().info("[HallOfFame] Relocated monument to " + describeLocation(origin));
+    }
+
     /** The monument lives in whichever world every player is guaranteed to pass through - the hub
      *  if one exists, otherwise the main server itself - never in a specific mini-server, so it
      *  stays a single global showcase. */
