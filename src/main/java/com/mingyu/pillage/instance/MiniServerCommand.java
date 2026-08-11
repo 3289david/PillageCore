@@ -1,5 +1,6 @@
 package com.mingyu.pillage.instance;
 
+import com.mingyu.pillage.data.dao.MiniServerSettingsDao;
 import com.mingyu.pillage.tp.TpManager;
 import com.mingyu.pillage.util.Msg;
 import org.bukkit.Bukkit;
@@ -18,14 +19,21 @@ public final class MiniServerCommand implements CommandExecutor, TabCompleter {
 
     private final InstanceManager instanceManager;
     private final TpManager tpManager;
+    private final MiniServerSettingsDao miniServerSettingsDao;
 
-    public MiniServerCommand(InstanceManager instanceManager, TpManager tpManager) {
+    public MiniServerCommand(InstanceManager instanceManager, TpManager tpManager, MiniServerSettingsDao miniServerSettingsDao) {
         this.instanceManager = instanceManager;
         this.tpManager = tpManager;
+        this.miniServerSettingsDao = miniServerSettingsDao;
     }
 
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
+        if (args.length >= 1 && args[0].equalsIgnoreCase("admin")) {
+            handleAdmin(sender, args);
+            return true;
+        }
+
         if (!(sender instanceof Player player)) {
             sender.sendMessage("플레이어만 사용할 수 있는 명령어입니다.");
             return true;
@@ -46,12 +54,34 @@ public final class MiniServerCommand implements CommandExecutor, TabCompleter {
     }
 
     private void sendUsage(Player player) {
-        player.sendMessage(Msg.of("&c사용법: /mini <create|join|list|delete|info> [이름]"));
+        player.sendMessage(Msg.of("&c사용법: /mini <create|join|list|delete|info> [이름] (관리자: /mini admin <on|off>)"));
+    }
+
+    /** Server-wide switch (not per-instance) for whether /mini create is allowed at all - existing
+     *  mini-servers stay joinable either way, this only stops new ones from being made. */
+    private void handleAdmin(CommandSender sender, String[] args) {
+        if (!sender.hasPermission("pillage.admin")) {
+            sender.sendMessage(Msg.of("&c권한이 없습니다."));
+            return;
+        }
+        if (args.length < 2 || !(args[1].equalsIgnoreCase("on") || args[1].equalsIgnoreCase("off"))) {
+            sender.sendMessage(Msg.of("&c사용법: /mini admin <on|off>"));
+            return;
+        }
+        boolean enabled = args[1].equalsIgnoreCase("on");
+        miniServerSettingsDao.setCreationEnabled(enabled);
+        sender.sendMessage(Msg.of(enabled
+                ? "&a미니서버 생성을 다시 허용합니다."
+                : "&c미니서버 생성을 금지했습니다. (기존 미니서버는 계속 입장 가능)"));
     }
 
     private void handleCreate(Player player, String[] args) {
         if (args.length < 2) {
             player.sendMessage(Msg.of("&c사용법: /mini create <이름>"));
+            return;
+        }
+        if (!miniServerSettingsDao.isCreationEnabled()) {
+            player.sendMessage(Msg.of("&c관리자가 미니서버 생성을 금지했습니다."));
             return;
         }
         if (tpManager.isTeleportBlocked(player)) return;
@@ -136,10 +166,13 @@ public final class MiniServerCommand implements CommandExecutor, TabCompleter {
     @Override
     public @Nullable List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command, @NotNull String alias, @NotNull String[] args) {
         if (args.length == 1) {
-            return List.of("create", "join", "list", "delete", "info");
+            return List.of("create", "join", "list", "delete", "info", "admin");
         }
         if (args.length == 2 && (args[0].equalsIgnoreCase("join") || args[0].equalsIgnoreCase("delete"))) {
             return instanceManager.list().stream().map(InstanceInfo::name).collect(Collectors.toList());
+        }
+        if (args.length == 2 && args[0].equalsIgnoreCase("admin")) {
+            return List.of("on", "off");
         }
         return List.of();
     }

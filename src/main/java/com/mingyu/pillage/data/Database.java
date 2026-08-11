@@ -368,6 +368,12 @@ public final class Database {
                 opened_count INTEGER NOT NULL DEFAULT 0
             );
         """);
+        st.execute("""
+            CREATE TABLE IF NOT EXISTS mini_server_settings (
+                id INTEGER PRIMARY KEY CHECK (id = 1),
+                creation_enabled INTEGER NOT NULL DEFAULT 1
+            );
+        """);
     }
 
     public Connection connection() {

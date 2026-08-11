@@ -159,8 +159,8 @@ commands:
     description: 전체 약탈 서버로 이동
     usage: /main
   mini:
-    description: 미니서버 생성/입장/목록/삭제/정보
-    usage: /mini <create|join|list|delete|info> [이름]
+    description: 미니서버 생성/입장/목록/삭제/정보, admin on|off 로 생성 자체를 금지(관리자)
+    usage: /mini <create|join|list|delete|info> [이름] | /mini admin <on|off>
 
 permissions:
   pillage.team.*:

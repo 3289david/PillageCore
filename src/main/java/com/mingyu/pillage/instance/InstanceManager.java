@@ -226,6 +226,11 @@ public final class InstanceManager {
     public void delete(InstanceInfo info) {
         World world = Bukkit.getWorld(info.worldName());
         if (world != null) {
+            // /mini delete <name> can be run from a different instance than the one being
+            // deleted - pin the pointer to the instance actually being deleted before kicking its
+            // occupants, since switchTo()'s save step otherwise saves under whatever the *caller's*
+            // instance happens to be instead of theirs.
+            gameplayDb.use(info.id());
             for (Player player : world.getPlayers()) {
                 sendToLobbyOrMain(player);
             }
