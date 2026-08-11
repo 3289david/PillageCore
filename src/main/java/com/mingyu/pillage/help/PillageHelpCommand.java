@@ -83,6 +83,7 @@ public final class PillageHelpCommand implements CommandExecutor {
                     "&e/backup list &f- 지금 서버의 백업 목록, &e/backup restore <이름> confirm &f- 복원(되돌릴 수 없음)",
                     "&e/restart &f- 5분 카운트다운(1분마다 알림, 마지막 10초 화면 중앙 표시) 뒤 전 서버 플레이어를 내보내고 재시작",
                     "&e/anticheat &f설정은 config.yml 의 anticheat 섹션에서 조절 (기본: 경고만, 매우 널널)",
+                    "&eForge/Fabric/NeoForge 등 모드 클라이언트는 자동으로 즉시 킥됩니다 (config.yml anti-mod-client)",
                     "&econfig.yml hub.enabled &f- false로 바꾸면 허브 없이 운영 (재시작 필요, 자세히는 README 참고)",
                     "&e/hub delete confirm &f- 허브 월드+데이터 영구 삭제, hub.enabled도 자동으로 false 저장(되돌릴 수 없음)"
             ),

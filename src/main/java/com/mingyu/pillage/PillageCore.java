@@ -10,6 +10,7 @@ import com.mingyu.pillage.admin.ReportCommand;
 import com.mingyu.pillage.admin.StaffCommand;
 import com.mingyu.pillage.admin.StaffModeManager;
 import com.mingyu.pillage.anticheat.AnticheatManager;
+import com.mingyu.pillage.anticheat.ModClientGuardListener;
 import com.mingyu.pillage.anticheat.AutoClickCheck;
 import com.mingyu.pillage.anticheat.CombatChecks;
 import com.mingyu.pillage.anticheat.FastBreakCheck;
@@ -436,6 +437,7 @@ public final class PillageCore extends JavaPlugin {
         pm.registerEvents(new MiningTracker(statsDao), this);
         pm.registerEvents(playtimeTracker, this);
         pm.registerEvents(new InspectListener(), this);
+        pm.registerEvents(new ModClientGuardListener(this), this);
         pm.registerEvents(new EventBoxListener(eventBoxManager), this);
         pm.registerEvents(new GlobalChatListener(chatManager, teamManager, donorManager), this);
         pm.registerEvents(new CombatTagListener(combatTagManager), this);

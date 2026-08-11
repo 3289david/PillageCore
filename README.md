@@ -211,6 +211,7 @@
 - **킬 로그 / 킬 스트릭**: 모든 PvP 킬이 킬 피드로 알려지고 DB에 기록됩니다(후원자는 그라데이션 이름으로 표시). 5/10/20 연킬도 공지됩니다. **이 알림들은 전체 서버로 브로드캐스트되지 않고, 그 킬이 일어난 서버(인스턴스)에 있는 플레이어에게만 표시됩니다** — 다른 미니서버에서 일어난 싸움이 보이지 않습니다. 사망 시 드롭 아이템은 커스텀 상자 없이 바닥에 그대로 흩어집니다(서버의 `keepInventory` 게임규칙을 그대로 따름).
 - **전투 태그**: 플레이어끼리 서로 때리면 30초간 "전투 중" 상태가 되고, 그 동안에는 `/tpa`, `/back`, `/home` 같은 플러그인 텔레포트를 쓸 수 없습니다(`config.yml`의 `combat.tag-duration-seconds`). 화면 위쪽에 남은 시간을 보여주는 보스바가 뜨고, 다시 맞을 때마다 30초로 초기화되는 게 그대로 반영됩니다(몬스터에게 맞는 건 전투 태그와 무관 — PvP로만 걸립니다). 엔더펄/코러스프룻 같은 바닐라 순간이동에는 영향이 없지만, **이 상태에서 로그아웃(서버 나가기)하면 그 자리에서 즉시 사망 처리됩니다** — 전투 중 도주 목적의 로그아웃을 막기 위함입니다.
 - **안티치트 (매우 널널)**: KillAura / Reach / Speed / Fly / AutoClick / Scaffold / FastBreak 7종. 판정 임계값을 넉넉하게 잡았고, 여러 번(기본 10회) 반복되어야 `pillage.admin` 권한자에게 채팅 경고만 보냅니다. 자동 제재(킥)는 `config.yml`의 `anticheat.punish.enabled`를 켜야만 동작하며 기본은 꺼져 있습니다.
+- **모드 클라이언트 차단 (기본 켜짐)**: Forge/Fabric/NeoForge/Quilt 등 모드로더로 접속하면 **자동으로 즉시 킥**됩니다. 두 가지 방식을 같이 씁니다 — (1) 모드로더가 접속 초반에 등록하는 핸드셰이크용 플러그인 채널 이름 검사(가장 빠르고 확실함), (2) 접속 2초 뒤 클라이언트가 스스로 보고하는 "brand" 문자열 검사(채널을 안 쓰는 경우의 보조 수단). 둘 다 `config.yml`의 `anti-mod-client.blocked-keywords` 목록(기본: forge, fml, fabric, neoforge, quilt, liteloader, cleanroom, ornithe)에 있는 단어가 포함되면 걸립니다. `pillage.admin` 권한자는 예외입니다. `anti-mod-client.enabled: false`로 끌 수 있고, 킥 메시지도 `kick-message`로 바꿀 수 있습니다.
 
 ## 권한
 
@@ -223,9 +224,10 @@
 
 ## 주요 설정 (config.yml)
 
-`database`, `team`, `tp`, `combat`, `raid`, `hub`, `spawn`, `anticheat`, `reward`, `chat` 섹션으로 나뉘어 있으며 각 값에 한글 주석이 달려 있습니다. 특히:
+`database`, `team`, `tp`, `combat`, `raid`, `hub`, `anti-mod-client`, `spawn`, `anticheat`, `reward`, `chat` 섹션으로 나뉘어 있으며 각 값에 한글 주석이 달려 있습니다. 특히:
 
 - `hub.enabled` (기본 `true`): `false`로 바꾸면 허브(로비) 월드를 아예 만들지 않는 버전으로 운영됩니다 (자세한 내용은 위 "허브 없이 운영하기" 참고)
+- `anti-mod-client.enabled` (기본 `true`): 모드 클라이언트(Forge/Fabric/NeoForge 등) 접속 자동 차단 on/off, `blocked-keywords`로 차단 대상 추가/제거
 - `combat.tag-duration-seconds`: 플레이어끼리 서로 때린 뒤 플러그인 텔레포트가 막히는 시간(초)
 - `raid.win-kill-threshold`: 레이드 중 이 킬 수 이상이면 공격 측 승리로 기록
 - `anticheat.punish.enabled`: 기본 `false` (경고만). 자동 킥을 원하면 `true`로 변경
