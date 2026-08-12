@@ -154,9 +154,35 @@ public final class InstanceManager {
         }
     }
 
+    /** Bukkit/Paper auto-creates a "&lt;world&gt;_nether" / "&lt;world&gt;_the_end" companion
+     *  dimension the first time a portal is used inside a custom world - those were never
+     *  registered anywhere, so every one of them used to silently fall through to the MAIN_ID
+     *  default below instead of resolving to whichever instance actually owns that portal's
+     *  overworld. That misattributed every save (inventory, ender chest, XP, homes, everything)
+     *  made while a player stood in a mini-server's or the hub's Nether/End to MAIN's database
+     *  instead of theirs. */
     public String resolveInstanceId(World world) {
         if (world == null) return MAIN_ID;
-        return instanceIdByWorldName.getOrDefault(world.getName(), MAIN_ID);
+        String name = world.getName();
+        String direct = instanceIdByWorldName.get(name);
+        if (direct != null) return direct;
+
+        String overworldName = stripDimensionSuffix(name);
+        if (overworldName != null) {
+            String parentId = instanceIdByWorldName.get(overworldName);
+            if (parentId != null) return parentId;
+        }
+        return MAIN_ID;
+    }
+
+    private static String stripDimensionSuffix(String worldName) {
+        if (worldName.endsWith("_nether")) {
+            return worldName.substring(0, worldName.length() - "_nether".length());
+        }
+        if (worldName.endsWith("_the_end")) {
+            return worldName.substring(0, worldName.length() - "_the_end".length());
+        }
+        return null;
     }
 
     /** Switches the active gameplay database to whichever instance this player is currently standing in. */
@@ -244,6 +270,17 @@ public final class InstanceManager {
             Bukkit.unloadWorld(world, false);
         }
         deleteWorldFolder(new File(Bukkit.getWorldContainer(), info.worldName()));
+        // A Nether/End portal used inside this mini-server would have lazily created a
+        // "<world>_nether" / "<world>_the_end" companion dimension alongside it - clean those up
+        // too, or they'd sit on disk as orphaned dead weight forever.
+        for (String suffix : new String[] {"_nether", "_the_end"}) {
+            String companionName = info.worldName() + suffix;
+            World companion = Bukkit.getWorld(companionName);
+            if (companion != null) {
+                Bukkit.unloadWorld(companion, false);
+            }
+            deleteWorldFolder(new File(Bukkit.getWorldContainer(), companionName));
+        }
         new File(plugin.getDataFolder(), "instance-" + info.id() + ".db").delete();
     }
 
@@ -264,6 +301,14 @@ public final class InstanceManager {
             Bukkit.unloadWorld(hubWorld, false);
         }
         deleteWorldFolder(new File(Bukkit.getWorldContainer(), HUB_WORLD_NAME));
+        for (String suffix : new String[] {"_nether", "_the_end"}) {
+            String companionName = HUB_WORLD_NAME + suffix;
+            World companion = Bukkit.getWorld(companionName);
+            if (companion != null) {
+                Bukkit.unloadWorld(companion, false);
+            }
+            deleteWorldFolder(new File(Bukkit.getWorldContainer(), companionName));
+        }
         new File(plugin.getDataFolder(), "hub.db").delete();
 
         instanceIdByWorldName.remove(HUB_WORLD_NAME);
