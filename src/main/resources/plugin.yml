@@ -59,6 +59,9 @@ commands:
     description: 관리자가 지정한 분 간격으로 채팅+화면 중앙 타이틀로 공지 순환 방송
     usage: /announce <add|remove|list|interval|on|off|test>
     permission: pillage.admin
+  minigame:
+    description: 미니게임(스플레프/TNT런/파쿠르/술래잡기) 참가/나가기/현황
+    usage: /minigame <join <spleef|tntrun|parkour|tag>|leave|list>
   halloffame:
     description: 명예의 전당(후원자 동상)을 방문
     usage: /halloffame

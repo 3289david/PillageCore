@@ -90,6 +90,9 @@ import com.mingyu.pillage.instance.PlayerVitalsManager;
 import com.mingyu.pillage.instance.PlayerEffectsManager;
 import com.mingyu.pillage.instance.PlayerExtraStateManager;
 import com.mingyu.pillage.menu.MenuCommand;
+import com.mingyu.pillage.minigame.MinigameCommand;
+import com.mingyu.pillage.minigame.MinigameListener;
+import com.mingyu.pillage.minigame.MinigameManager;
 import com.mingyu.pillage.menu.MenuListener;
 import com.mingyu.pillage.menu.MenuService;
 import com.mingyu.pillage.pvp.KillStreakManager;
@@ -291,6 +294,13 @@ public final class PillageCore extends JavaPlugin {
         rewardManager.startPlaytimeCheck();
 
         EventBoxManager eventBoxManager = new EventBoxManager(this, eventBoxOpenDao);
+
+        MinigameManager minigameManager = new MinigameManager(this, economyManager);
+        minigameManager.start();
+        MinigameCommand minigameCommand = new MinigameCommand(minigameManager);
+        getCommand("minigame").setExecutor(minigameCommand);
+        getCommand("minigame").setTabCompleter(minigameCommand);
+        getServer().getPluginManager().registerEvents(new MinigameListener(this, minigameManager), this);
 
         StaffModeManager staffModeManager = new StaffModeManager();
 
