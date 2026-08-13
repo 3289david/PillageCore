@@ -90,7 +90,8 @@ public final class PillageHelpCommand implements CommandExecutor {
             List.of(
                     "&6[후원자] &7(결제 연동 없음 - 관리자가 수동으로 등록)",
                     "&e/donor add <player> [배지] &f/ &e/donor remove <player> &f/ &e/donor list &7(관리자)",
-                    "&e/statue &f- 자기 얼굴 동상 설치 (후원자 전용)",
+                    "&e/statue &f- 자기 얼굴 동상 설치 (후원자 전용, 10초 쿨다운)",
+                    "&e/statue remove &f- 내 동상 제거, &e/statue remove <player|all> &f- (관리자) 다른 사람/전체 동상 제거",
                     "&e/pet name <이름> &f/ &e/pet variant <종류> &f- 고양이 펫 이름·무늬 설정 (후원자 전용)",
                     "&e/pet off &f/ &e/pet on &f- 펫 숨기기/다시 부르기 (후원자 전용)",
                     "&7- 후원자로 등록되면 채팅/킬피드/이름표가 꾸며지고, 입장 시 폭죽·파티클이 터지며,",

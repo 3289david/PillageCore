@@ -377,7 +377,7 @@ public final class PillageCore extends JavaPlugin {
         getCommand("pillageban").setExecutor(new BanCommand(banLogDao));
 
         getCommand("donor").setExecutor(new DonorCommand(donorManager, donorNametagManager, donorPetManager, hallOfFameManager));
-        getCommand("statue").setExecutor(new StatueCommand(donorManager));
+        getCommand("statue").setExecutor(new StatueCommand(this, donorManager));
         getCommand("pet").setExecutor(new PetCommand(donorManager, donorPetManager));
 
         getCommand("hub").setExecutor(new HubCommand(instanceManager, tpManager, hallOfFameManager));

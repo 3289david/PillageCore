@@ -147,8 +147,8 @@ commands:
     usage: /donor <add|remove> <player> [배지] 또는 /donor list
     permission: pillage.admin
   statue:
-    description: 자신의 동상(아머스탠드) 설치 (후원자 전용)
-    usage: /statue
+    description: 자신의 동상(아머스탠드) 설치 (후원자 전용, 10초 쿨다운), remove로 제거 (관리자는 다른 사람/전체도 제거 가능)
+    usage: /statue [remove [플레이어|all]]
   pet:
     description: 후원자 전용 고양이 펫 커스터마이즈 (후원자 전용)
     usage: /pet <name|variant> <값>

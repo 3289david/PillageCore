@@ -5,6 +5,7 @@ import com.mingyu.pillage.data.dao.HomeDao;
 import com.mingyu.pillage.data.dao.LastLocationDao;
 import com.mingyu.pillage.donor.DonorManager;
 import com.mingyu.pillage.util.Msg;
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Particle;
 import org.bukkit.entity.Player;
@@ -114,7 +115,22 @@ public final class TpManager {
             origin.getWorld().spawnParticle(Particle.PORTAL, origin.clone().add(0, 1, 0), 40, 0.3, 0.5, 0.3, 0.1);
         }
 
+        boolean crossingDimension = !destination.getWorld().equals(origin.getWorld());
         player.teleport(destination);
+        // Vanilla's dimension-change handling for the Nether/End can override the exact
+        // coordinates given to teleport() with that dimension's own default spawn/platform the
+        // moment a player is moved into it by anything other than walking through a real portal -
+        // this is why /home, /tpa, /back etc. into a Nether or End home used to always land
+        // players at (0, y, 0) instead of the saved spot. Once already standing in that dimension,
+        // a second teleport to the same Location isn't a dimension change anymore, so it isn't
+        // subject to that override and lands exactly where it should.
+        if (crossingDimension) {
+            Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                if (player.isOnline() && player.getWorld().equals(destination.getWorld())) {
+                    player.teleport(destination);
+                }
+            }, 2L);
+        }
         player.sendMessage(Msg.of("&a이동했습니다."));
         cooldowns.put(player.getUniqueId(), System.currentTimeMillis() + cooldownSeconds * 1000L);
 
