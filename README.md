@@ -202,12 +202,21 @@
 | `/backup list` | 지금 서 있는 서버의 백업 목록 조회 |
 | `/backup restore <이름> [confirm]` | 백업을 지금 서 있는 서버에 복원 (아래 참고) |
 | `/restart` | 서버 전체(모든 인스턴스)의 플레이어를 전부 내보내고 서버를 재시작 (아래 참고) |
+| `/main reset confirm` | 전체 약탈 서버(메인)의 월드와 데이터만 초기화 (허브/미니서버는 영향 없음, 되돌릴 수 없음) |
+| `/modclient <on\|off>` | 모드 클라이언트(Forge/Fabric/NeoForge 등) 접속 차단 즉시 켜기/끄기 (재시작 불필요) |
+| `/announce <add\|remove\|list\|interval\|on\|off\|test>` | 지정한 분 간격으로 채팅+화면 중앙 타이틀로 공지 순환 방송 (아래 참고) |
 
 `/restart`는 특정 인스턴스가 아니라 **서버 전체**에 적용되는 명령어입니다 — 실행하면 전체 서버/허브/미니서버 할 것 없이 접속 중인 모든 플레이어에게 **5분 뒤** 재시작된다는 예고가 뜨고, 그 뒤로 **1분마다** "N분 후 재시작됩니다" 채팅 알림이 오며, **마지막 10초**는 채팅이 아니라 **화면 정중앙에 크게 숫자 카운트다운**(타이틀)이 뜹니다. 0초가 되면 그때까지 접속해 있는 플레이어는 강제로 킥되고 서버가 재시작됩니다. 실제로 새 프로세스가 뜨는지는 서버를 어떤 방식으로 구동하고 있는지(재시작 스크립트 설정 여부, 호스팅사의 자동 재시작 여부)에 달려 있습니다 — 설정된 재시작 스크립트가 없다면 정상적으로 종료만 되고, 이후 다시 켜주는 건 서버를 구동하는 쪽(호스팅 패널 등)의 몫입니다. 이미 예약된 상태에서 `/restart`를 또 치면 중복 예약되지 않고 안내만 됩니다.
 
 `/backup`은 예약/자동 백업이 아니라 관리자가 원하는 시점에 직접 실행하는 즉석 스냅샷입니다. 실행하면 그 순간 월드를 디스크에 강제로 저장한 뒤 `plugins/PillageCore/backups/<인스턴스ID>_<시각>.zip` **압축 파일 하나**에 월드 전체(`world/`)와 그 서버에 접속 중인 플레이어들의 인벤토리(`inventories/<UUID>_<이름>.dat`)를 담아둡니다 — 압축 안 된 그대로 복사해두면 호스팅 디스크 용량을 순식간에 잡아먹기 때문에, 처음부터 압축해서 저장합니다. 월드가 크면 압축하는 동안 서버가 잠깐 멈출 수 있습니다.
 
 `/backup restore <이름>`은 되돌리려는 **바로 그 서버에 직접 들어가서** 실행해야 하며(다른 서버 백업은 거부됩니다), 처음 실행하면 경고만 뜨고 아무 일도 일어나지 않습니다 — 실제로 되돌리려면 `/backup restore <이름> confirm`처럼 `confirm`을 붙여야 합니다. 확정하면 그 서버에 있던 모든 플레이어를 즉시 허브로 이동시킨 뒤, 월드를 백업 시점 그대로 덮어씁니다(그 사이의 변경 사항은 전부 사라지며 되돌릴 수 없습니다). 백업에 들어있던 인벤토리는 각 플레이어가 **다음에 그 서버에 다시 들어올 때** 자동으로 적용됩니다(온라인/오프라인 상관없이 예약되는 방식으로, 지금 당장 그 순간의 인벤토리를 강제로 바꾸지는 않습니다).
+
+`/main reset confirm`은 **전체 약탈 서버(메인)만** 초기화합니다 — 팀/경제/통계/홈/상점/인벤토리 등 메인의 모든 데이터와 월드가 완전히 새 것으로 바뀌지만, 허브나 미니서버는 전혀 건드리지 않습니다. `confirm` 없이 치면 경고만 뜨고 아무 일도 일어나지 않으며, 실행 시점에 메인에 있던 플레이어는 허브로(허브가 없으면 접속 종료) 이동됩니다. 되돌릴 수 없는 작업입니다.
+
+`/modclient <on|off>`는 `config.yml`의 `anti-mod-client.enabled`를 그 자리에서 바꿉니다 — 재시작 없이 즉시 적용됩니다.
+
+`/announce`는 관리자가 등록한 문구를 지정한 분 간격으로 순서대로 하나씩 전체 서버에 방송합니다(채팅 메시지 + 화면 정중앙 타이틀, 4초간 표시). `/announce add <문구>`로 추가, `/announce remove <번호>`로 제거(`/announce list`로 번호 확인), `/announce interval <분>`으로 간격 설정, `/announce on`/`off`로 전체 켜기/끄기, `/announce test`로 다음 문구를 즉시 미리 방송해볼 수 있습니다. 문구가 하나도 없거나 꺼져 있으면 아무것도 방송되지 않습니다.
 
 ## 자동 시스템 (명령어 없음)
 
@@ -224,11 +233,11 @@
 | `pillage.team.*` | true | 팀 명령어 |
 | `pillage.tp.*` | true | TP 명령어 |
 | `pillage.trade.*` | true | 거래 명령어 |
-| `pillage.admin` | op | 안티치트 경고 수신, 관리자 명령어(`/staff`, `/inspect`, `/logs`, `/pillageban`, `/eventbox give`, `/shop add\|remove\|list`, `/donor add\|remove\|list`, `/homeadmin`, `/backup`, `/restart`), 인원수 제한 우회 등 |
+| `pillage.admin` | op | 안티치트 경고 수신, 관리자 명령어(`/staff`, `/inspect`, `/logs`, `/pillageban`, `/eventbox give`, `/shop add\|remove\|list`, `/donor add\|remove\|list`, `/homeadmin`, `/backup`, `/restart`, `/main reset`, `/modclient`, `/announce`, `/mini admin`, `/hub delete`), 인원수 제한 우회 등 |
 
 ## 주요 설정 (config.yml)
 
-`database`, `team`, `tp`, `combat`, `raid`, `hub`, `anti-mod-client`, `spawn`, `anticheat`, `reward`, `chat` 섹션으로 나뉘어 있으며 각 값에 한글 주석이 달려 있습니다. 특히:
+`database`, `announce`, `team`, `tp`, `combat`, `raid`, `hub`, `anti-mod-client`, `spawn`, `anticheat`, `reward`, `chat` 섹션으로 나뉘어 있으며 각 값에 한글 주석이 달려 있습니다. 특히:
 
 - `hub.enabled` (기본 `true`): `false`로 바꾸면 허브(로비) 월드를 아예 만들지 않는 버전으로 운영됩니다 (자세한 내용은 위 "허브 없이 운영하기" 참고)
 - `anti-mod-client.enabled` (기본 `true`): 모드 클라이언트(Forge/Fabric/NeoForge 등) 접속 자동 차단 on/off, `blocked-keywords`로 차단 대상 추가/제거

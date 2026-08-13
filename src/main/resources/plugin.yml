@@ -51,6 +51,14 @@ commands:
     description: 5분 카운트다운(1분마다 알림, 마지막 10초 화면 중앙 표시) 뒤 모든 플레이어를 내보내고 서버를 재시작
     usage: /restart
     permission: pillage.admin
+  modclient:
+    description: 모드 클라이언트(Forge/Fabric/NeoForge 등) 접속 차단 즉시 켜기/끄기 (재시작 불필요)
+    usage: /modclient <on|off>
+    permission: pillage.admin
+  announce:
+    description: 관리자가 지정한 분 간격으로 채팅+화면 중앙 타이틀로 공지 순환 방송
+    usage: /announce <add|remove|list|interval|on|off|test>
+    permission: pillage.admin
   halloffame:
     description: 명예의 전당(후원자 동상)을 방문
     usage: /halloffame
@@ -156,8 +164,8 @@ commands:
     description: 허브(로비)로 이동, 또는 delete confirm 으로 허브 자체를 영구 삭제(관리자)
     usage: /hub [delete confirm]
   main:
-    description: 전체 약탈 서버로 이동
-    usage: /main
+    description: 전체 약탈 서버로 이동, reset confirm 으로 메인 서버만 초기화(관리자, 허브/미니서버는 영향 없음)
+    usage: /main [reset confirm]
   mini:
     description: 미니서버 생성/입장/목록/삭제/정보, admin on|off 로 생성 자체를 금지(관리자)
     usage: /mini <create|join|list|delete|info> [이름] | /mini admin <on|off>

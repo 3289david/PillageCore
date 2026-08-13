@@ -4,6 +4,7 @@ import com.mingyu.pillage.combat.CombatTagManager;
 import com.mingyu.pillage.data.dao.HomeDao;
 import com.mingyu.pillage.data.dao.LastLocationDao;
 import com.mingyu.pillage.donor.DonorManager;
+import com.mingyu.pillage.instance.InstanceManager;
 import com.mingyu.pillage.util.Msg;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -33,6 +34,7 @@ public final class TpManager {
     private final Map<UUID, PendingTeleport> pendingTeleports = new HashMap<>();
     private DonorManager donorManager;
     private CombatTagManager combatTagManager;
+    private InstanceManager instanceManager;
 
     public TpManager(JavaPlugin plugin, HomeDao homeDao, LastLocationDao lastLocationDao,
                       int countdownSeconds, int cooldownSeconds, int requestTimeoutSeconds,
@@ -56,6 +58,10 @@ public final class TpManager {
 
     public void setCombatTagManager(CombatTagManager combatTagManager) {
         this.combatTagManager = combatTagManager;
+    }
+
+    public void setInstanceManager(InstanceManager instanceManager) {
+        this.instanceManager = instanceManager;
     }
 
     public boolean hasPendingTeleport(UUID uuid) {
@@ -108,6 +114,13 @@ public final class TpManager {
     }
 
     private void executeTeleport(Player player, Location destination) {
+        // With a countdown, this runs on a delayed task - by then, whichever other player last
+        // acted may have moved the shared "current instance" pointer elsewhere, so it has to be
+        // re-pinned to this player's own instance right before the save below, the same way every
+        // other delayed/looped multi-player operation in this plugin already does.
+        if (instanceManager != null) {
+            instanceManager.enter(player);
+        }
         Location origin = player.getLocation();
         lastLocationDao.save(player.getUniqueId(), origin);
 

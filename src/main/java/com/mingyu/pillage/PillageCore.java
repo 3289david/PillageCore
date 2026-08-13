@@ -9,7 +9,10 @@ import com.mingyu.pillage.admin.LogsCommand;
 import com.mingyu.pillage.admin.ReportCommand;
 import com.mingyu.pillage.admin.StaffCommand;
 import com.mingyu.pillage.admin.StaffModeManager;
+import com.mingyu.pillage.announce.AnnounceCommand;
+import com.mingyu.pillage.announce.AnnounceManager;
 import com.mingyu.pillage.anticheat.AnticheatManager;
+import com.mingyu.pillage.anticheat.ModClientAdminCommand;
 import com.mingyu.pillage.anticheat.ModClientGuardListener;
 import com.mingyu.pillage.anticheat.AutoClickCheck;
 import com.mingyu.pillage.anticheat.CombatChecks;
@@ -262,6 +265,7 @@ public final class PillageCore extends JavaPlugin {
                 shopManager, playerInventoryManager, playerPositionDao, playerVitalsManager, playerEffectsManager,
                 playerExtraStateManager);
         instanceManager.initialize();
+        tpManager.setInstanceManager(instanceManager);
         spawnService.applyMainWorldSpawn();
         // With no hub, the monument gets its own tiny dedicated world instead of the lobby -
         // never touching real main-server terrain or getting in the way of actual play.
@@ -289,6 +293,12 @@ public final class PillageCore extends JavaPlugin {
         EventBoxManager eventBoxManager = new EventBoxManager(this, eventBoxOpenDao);
 
         StaffModeManager staffModeManager = new StaffModeManager();
+
+        AnnounceManager announceManager = new AnnounceManager(this);
+        announceManager.start();
+        AnnounceCommand announceCommand = new AnnounceCommand(this, announceManager);
+        getCommand("announce").setExecutor(announceCommand);
+        getCommand("announce").setTabCompleter(announceCommand);
 
         ChatManager chatManager = new ChatManager(
                 getConfig().getInt("chat.cooldown-seconds", 2),
@@ -339,6 +349,7 @@ public final class PillageCore extends JavaPlugin {
         getCommand("homeadmin").setExecutor(new HomeAdminCommand(homeSettingsDao));
         getCommand("backup").setExecutor(new BackupCommand(this, instanceManager, gameplayDb, playerInventoryDao));
         getCommand("restart").setExecutor(new RestartCommand(this));
+        getCommand("modclient").setExecutor(new ModClientAdminCommand(this));
         reclaimBuiltinCommand("restart");
 
         getCommand("trade").setExecutor(new TradeCommand(tradeManager));
@@ -382,7 +393,7 @@ public final class PillageCore extends JavaPlugin {
 
         getCommand("hub").setExecutor(new HubCommand(instanceManager, tpManager, hallOfFameManager));
         getCommand("halloffame").setExecutor(new HallOfFameCommand(tpManager, hallOfFameManager));
-        getCommand("main").setExecutor(new MainServerCommand(instanceManager, tpManager));
+        getCommand("main").setExecutor(new MainServerCommand(instanceManager, tpManager, spawnService));
         MiniServerCommand miniServerCommand = new MiniServerCommand(instanceManager, tpManager, miniServerSettingsDao);
         getCommand("mini").setExecutor(miniServerCommand);
         getCommand("mini").setTabCompleter(miniServerCommand);

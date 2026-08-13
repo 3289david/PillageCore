@@ -6,6 +6,7 @@ import com.mingyu.pillage.data.dao.PlayerInstanceDao;
 import com.mingyu.pillage.data.dao.PlayerPositionDao;
 import com.mingyu.pillage.shop.ShopManager;
 import com.mingyu.pillage.team.TeamManager;
+import com.mingyu.pillage.util.Msg;
 import org.bukkit.Bukkit;
 import org.bukkit.GameRule;
 import org.bukkit.Location;
@@ -290,6 +291,10 @@ public final class InstanceManager {
     public void deleteHubWorldAndData() {
         World hubWorld = Bukkit.getWorld(HUB_WORLD_NAME);
         if (hubWorld != null) {
+            // Same reasoning as /mini delete and resetMainServer() - /hub delete can be run from
+            // a different instance than the hub itself, so the shared pointer needs pinning here
+            // too before switchTo()'s save step runs for each of the hub's occupants.
+            gameplayDb.use(HUB_ID);
             for (Player player : hubWorld.getPlayers()) {
                 switchTo(player, MAIN_ID, mainSpawn());
             }
@@ -315,6 +320,47 @@ public final class InstanceManager {
         hubEnabled = false;
         plugin.getConfig().set("hub.enabled", false);
         plugin.saveConfig();
+    }
+
+    /** Wipes the main server's world and gameplay database back to a fresh state - teams,
+     *  economy, homes, shop, everyone's inventory/position/etc. under MAIN_ID, all gone - while
+     *  keeping the "main" identity itself (unlike a mini-server, main can't be deleted outright,
+     *  only reset). Kicks anyone currently on main to the hub first, or - if running without one -
+     *  disconnects them instead, since there's nowhere else to put them while it's being replaced. */
+    public void resetMainServer() {
+        World world = Bukkit.getWorld(mainWorldName);
+        if (world != null) {
+            // Pin the pointer to MAIN before kicking anyone, for the same reason /mini delete and
+            // /hub delete do - this can be run from a different instance than the one being reset.
+            gameplayDb.use(MAIN_ID);
+            for (Player player : world.getPlayers()) {
+                if (hubEnabled) {
+                    switchTo(player, HUB_ID, hubSpawn());
+                } else {
+                    player.kick(Msg.of("&c메인 서버가 초기화되어 접속이 종료되었습니다. 잠시 후 다시 접속해 주세요."));
+                }
+            }
+        }
+        gameplayDb.closeInstance(MAIN_ID);
+        if (world != null) {
+            Bukkit.unloadWorld(world, false);
+        }
+        deleteWorldFolder(new File(Bukkit.getWorldContainer(), mainWorldName));
+        for (String suffix : new String[] {"_nether", "_the_end"}) {
+            String companionName = mainWorldName + suffix;
+            World companion = Bukkit.getWorld(companionName);
+            if (companion != null) {
+                Bukkit.unloadWorld(companion, false);
+            }
+            deleteWorldFolder(new File(Bukkit.getWorldContainer(), companionName));
+        }
+        new File(plugin.getDataFolder(), "pillage.db").delete();
+
+        new WorldCreator(mainWorldName).environment(World.Environment.NORMAL).createWorld();
+        gameplayDb.open(MAIN_ID, "pillage.db");
+        gameplayDb.use(MAIN_ID);
+        teamManager.loadCurrentInstance();
+        shopManager.loadCurrentInstance();
     }
 
     private void deleteWorldFolder(File folder) {

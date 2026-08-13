@@ -22,6 +22,12 @@ anti-mod-client:
 database:
   file: pillage.db
 
+# 관리자가 지정한 분 간격으로 채팅+화면 중앙 타이틀로 공지를 순환 방송합니다. /announce 명령어로 관리하세요.
+announce:
+  enabled: false
+  interval-minutes: 60
+  messages: []
+
 team:
   default-max-members: 6
   max-members-hard-cap: 12
