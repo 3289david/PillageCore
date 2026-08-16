@@ -85,6 +85,10 @@ public final class PillageHelpCommand implements CommandExecutor {
                     "&e/main reset confirm &f- 메인 서버만 초기화 (허브/미니서버는 영향 없음, 되돌릴 수 없음)",
                     "&e/modclient <on|off> &f- 모드 클라이언트 차단 즉시 켜기/끄기 (재시작 불필요)",
                     "&e/announce add|remove|list|interval|on|off|test &f- 지정 간격으로 채팅+타이틀 공지 순환 방송",
+                    "&e/boss spawn &f- 보스 강제 소환, &e/boss reset confirm &f- 처치 기록/체력 스케일링 초기화(되돌릴 수 없음)",
+                    "&e/boss reward add|clear|list &f- 보스 처치 보상 아이템 관리 (add는 손에 든 아이템 등록)",
+                    "&e/endwar schedule <일> <시> &f- 매달 정기 엔드대전 일정 설정",
+                    "&e/endwar start confirm &f- 지금 참가 신청된 인원으로 즉시 시작, &e/endwar cancel &f- 취소",
                     "&e/anticheat &f설정은 config.yml 의 anticheat 섹션에서 조절 (기본: 경고만, 매우 널널)",
                     "&eForge/Fabric/NeoForge 등 모드 클라이언트는 자동으로 즉시 킥됩니다 (config.yml anti-mod-client)",
                     "&econfig.yml hub.enabled &f- false로 바꾸면 허브 없이 운영 (재시작 필요, 자세히는 README 참고)",
@@ -135,6 +139,21 @@ public final class PillageHelpCommand implements CommandExecutor {
                     "&7- 인원이 모이면 10초 카운트다운 후 자동 시작, 게임 중에는 죽지 않습니다(추락사 포함).",
                     "&7- 참가 시 인벤토리가 저장되고, 라운드 종료/&e/minigame leave&7 시 그대로 복원됩니다.",
                     "&7- 승리/완주하면 에메랄드 보상을 받습니다."
+            ),
+            List.of(
+                    "&6[보스몹/점프맵/엔드대전]",
+                    "&e/boss &f- 보스 전용 월드로 이동, &e/boss info &f- 체력/처치 현황 확인",
+                    "&7- 최강 보스몹 '약탈의 군주'는 체력 10,000(처치할 때마다 다음 등장 체력이 영구 상승)이며,",
+                    "&7 화염구/소환수/강타/독구름/순간이동강타/벼락/중력장/화염장판/충격파/실명저주 10가지 공격을 무작위로 사용합니다.",
+                    "&7 처치에 기여한 전원에게 관리자가 등록해둔 보상 아이템 중 하나가 지급되고, 잠시 뒤 다시 등장합니다.",
+                    "",
+                    "&e/jump [start|leave|top] &f- 체크포인트형 점프맵 도전/나가기/기록 순위",
+                    "&7- 떨어지면 마지막으로 지난 체크포인트로 되돌아갑니다(처음부터 다시 X). 완주 기록이 저장되고 신기록이면 알림이 뜹니다.",
+                    "",
+                    "&e/endwar [join|leave|info] &f- 엔드대전 참가 신청/취소/현황 확인",
+                    "&7- 관리자가 예약한 매달 정해진 날짜/시각에 자동으로 시작되는 대규모 팀 전투입니다(전용 엔드풍 월드).",
+                    "&7 참가 신청자는 소속 팀별로(팀이 없으면 개인 단위로) 나뉘어 싸우고, 마지막까지 살아남은 팀이 승리해 보상을 받습니다.",
+                    "&7 장비는 참가 시 지급되는 전투 키트를 사용하며, 원래 인벤토리는 종료 후 그대로 복원됩니다."
             )
     );
 

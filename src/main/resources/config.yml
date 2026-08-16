@@ -28,6 +28,27 @@ announce:
   interval-minutes: 60
   messages: []
 
+# 최강 보스몹 "약탈의 군주" - 전용 월드(pillage_boss)에서 항상 대기하며, 체력은 실제 바닐라 체력이
+# 아니라 이 값 기준의 별도 계산으로 관리됩니다(바닐라 체력 속성 상한을 넘길 수 있도록). 처치할 때마다
+# 다음 등장 체력이 health-increase-per-kill 만큼 영구적으로 올라갑니다. 보상 아이템은
+# /boss reward add 로 관리자가 직접 등록해야 합니다.
+boss:
+  base-health: 10000
+  health-increase-per-kill: 2000
+  respawn-minutes: 10
+  attack-interval-seconds: 5
+
+# 엔드대전 - 매달 지정한 일/시각에 자동으로 시작되는 대규모 팀전 이벤트(전용 월드 pillage_endwar).
+# /endwar schedule <일> <시> 로 예약하세요. /endwar start confirm 으로 관리자가 즉시 시작할 수도
+# 있습니다. day-of-month가 그 달에 없는 날짜(30, 31일 등)면 그 달의 마지막 날로 대체됩니다.
+endwar:
+  enabled: false
+  day-of-month: 1
+  hour: 20
+  win-reward: 200
+  # 내부적으로 이번 달에 이미 실행했는지 기록하는 값입니다 - 직접 수정하지 마세요.
+  last-run-year-month: ""
+
 team:
   default-max-members: 6
   max-members-hard-cap: 12

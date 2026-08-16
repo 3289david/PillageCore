@@ -62,6 +62,15 @@ commands:
   minigame:
     description: 미니게임(스플레프/TNT런/파쿠르/술래잡기) 참가/나가기/현황
     usage: /minigame <join <spleef|tntrun|parkour|tag>|leave|list>
+  boss:
+    description: 최강 보스몹 "약탈의 군주" 전용 월드로 이동/현황 확인, 관리자는 강제 소환/초기화/보상 아이템 관리
+    usage: /boss [info|spawn|reset confirm|reward <add|clear|list>]
+  jump:
+    description: 체크포인트형 점프맵 도전/기록 순위 (전용 월드)
+    usage: /jump [start|leave|top]
+  endwar:
+    description: 매달 정기(또는 관리자 즉시 시작) 대규모 팀 전투 이벤트 참가/현황, 관리자는 일정 설정/즉시 시작/취소
+    usage: /endwar [join|leave|info|start confirm|cancel|schedule <일> <시>]
   halloffame:
     description: 명예의 전당(후원자 동상)을 방문
     usage: /halloffame

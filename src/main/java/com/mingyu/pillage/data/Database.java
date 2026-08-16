@@ -374,6 +374,28 @@ public final class Database {
                 creation_enabled INTEGER NOT NULL DEFAULT 1
             );
         """);
+        // Boss mob, jump map: dedicated worlds outside the instance system entirely, so their
+        // state lives here rather than in any per-instance gameplay database.
+        st.execute("""
+            CREATE TABLE IF NOT EXISTS boss_state (
+                id INTEGER PRIMARY KEY CHECK (id = 1),
+                kill_count INTEGER NOT NULL DEFAULT 0,
+                max_health INTEGER NOT NULL DEFAULT 10000
+            );
+        """);
+        st.execute("""
+            CREATE TABLE IF NOT EXISTS boss_rewards (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                item_data TEXT NOT NULL
+            );
+        """);
+        st.execute("""
+            CREATE TABLE IF NOT EXISTS jump_records (
+                uuid TEXT PRIMARY KEY,
+                name TEXT NOT NULL,
+                best_millis INTEGER NOT NULL
+            );
+        """);
     }
 
     public Connection connection() {

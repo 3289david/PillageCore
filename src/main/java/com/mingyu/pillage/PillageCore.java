@@ -19,6 +19,9 @@ import com.mingyu.pillage.anticheat.CombatChecks;
 import com.mingyu.pillage.anticheat.FastBreakCheck;
 import com.mingyu.pillage.anticheat.MovementChecks;
 import com.mingyu.pillage.anticheat.ScaffoldCheck;
+import com.mingyu.pillage.boss.BossCommand;
+import com.mingyu.pillage.boss.BossListener;
+import com.mingyu.pillage.boss.BossManager;
 import com.mingyu.pillage.chat.ChatManager;
 import com.mingyu.pillage.chat.GlobalChatListener;
 import com.mingyu.pillage.chat.MsgCommand;
@@ -28,11 +31,14 @@ import com.mingyu.pillage.combat.CombatTagListener;
 import com.mingyu.pillage.combat.CombatTagManager;
 import com.mingyu.pillage.data.Database;
 import com.mingyu.pillage.data.dao.BanLogDao;
+import com.mingyu.pillage.data.dao.BossDao;
+import com.mingyu.pillage.data.dao.BossRewardDao;
 import com.mingyu.pillage.data.dao.DeathLocationDao;
 import com.mingyu.pillage.data.dao.EconomyDao;
 import com.mingyu.pillage.data.dao.HomeDao;
 import com.mingyu.pillage.data.dao.HomeSettingsDao;
 import com.mingyu.pillage.data.dao.InstanceDao;
+import com.mingyu.pillage.data.dao.JumpRecordDao;
 import com.mingyu.pillage.data.dao.KillLogDao;
 import com.mingyu.pillage.data.dao.LastLocationDao;
 import com.mingyu.pillage.data.dao.PlayerInstanceDao;
@@ -74,6 +80,9 @@ import com.mingyu.pillage.economy.DepositCommand;
 import com.mingyu.pillage.economy.EconomyManager;
 import com.mingyu.pillage.economy.PayCommand;
 import com.mingyu.pillage.economy.WithdrawCommand;
+import com.mingyu.pillage.endwar.EndWarCommand;
+import com.mingyu.pillage.endwar.EndWarListener;
+import com.mingyu.pillage.endwar.EndWarManager;
 import com.mingyu.pillage.help.PillageHelpCommand;
 import com.mingyu.pillage.instance.HubBuildGuardListener;
 import com.mingyu.pillage.instance.HubCommand;
@@ -89,6 +98,9 @@ import com.mingyu.pillage.instance.PlayerInventoryManager;
 import com.mingyu.pillage.instance.PlayerVitalsManager;
 import com.mingyu.pillage.instance.PlayerEffectsManager;
 import com.mingyu.pillage.instance.PlayerExtraStateManager;
+import com.mingyu.pillage.jump.JumpCommand;
+import com.mingyu.pillage.jump.JumpListener;
+import com.mingyu.pillage.jump.JumpManager;
 import com.mingyu.pillage.menu.MenuCommand;
 import com.mingyu.pillage.minigame.MinigameCommand;
 import com.mingyu.pillage.minigame.MinigameListener;
@@ -205,6 +217,12 @@ public final class PillageCore extends JavaPlugin {
         EventBoxClaimDao eventBoxClaimDao = new EventBoxClaimDao(globalDb);
         EventBoxOpenDao eventBoxOpenDao = new EventBoxOpenDao(globalDb);
         MiniServerSettingsDao miniServerSettingsDao = new MiniServerSettingsDao(globalDb);
+        // Boss/jump map: dedicated worlds outside the instance system, same reasoning as donor/
+        // Hall of Fame data above - their state must survive regardless of which instance anyone
+        // is standing in.
+        BossDao bossDao = new BossDao(globalDb);
+        BossRewardDao bossRewardDao = new BossRewardDao(globalDb);
+        JumpRecordDao jumpRecordDao = new JumpRecordDao(globalDb);
 
         teamManager = new TeamManager(
                 teamDao, gameplayDb,
@@ -301,6 +319,32 @@ public final class PillageCore extends JavaPlugin {
         getCommand("minigame").setExecutor(minigameCommand);
         getCommand("minigame").setTabCompleter(minigameCommand);
         getServer().getPluginManager().registerEvents(new MinigameListener(this, minigameManager), this);
+
+        BossManager bossManager = new BossManager(this, bossDao, bossRewardDao,
+                getConfig().getLong("boss.base-health", 10000),
+                getConfig().getLong("boss.health-increase-per-kill", 2000),
+                getConfig().getInt("boss.respawn-minutes", 10),
+                getConfig().getInt("boss.attack-interval-seconds", 5));
+        bossManager.start();
+        BossCommand bossCommand = new BossCommand(bossManager, bossRewardDao, tpManager);
+        getCommand("boss").setExecutor(bossCommand);
+        getCommand("boss").setTabCompleter(bossCommand);
+        getServer().getPluginManager().registerEvents(new BossListener(bossManager), this);
+
+        JumpManager jumpManager = new JumpManager(this, jumpRecordDao);
+        jumpManager.start();
+        JumpCommand jumpCommand = new JumpCommand(jumpManager);
+        getCommand("jump").setExecutor(jumpCommand);
+        getCommand("jump").setTabCompleter(jumpCommand);
+        getServer().getPluginManager().registerEvents(new JumpListener(jumpManager), this);
+
+        EndWarManager endWarManager = new EndWarManager(this, teamManager, economyManager,
+                getConfig().getLong("endwar.win-reward", 200));
+        endWarManager.start();
+        EndWarCommand endWarCommand = new EndWarCommand(this, endWarManager);
+        getCommand("endwar").setExecutor(endWarCommand);
+        getCommand("endwar").setTabCompleter(endWarCommand);
+        getServer().getPluginManager().registerEvents(new EndWarListener(this, endWarManager), this);
 
         StaffModeManager staffModeManager = new StaffModeManager();
 

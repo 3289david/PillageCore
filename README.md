@@ -27,7 +27,7 @@
 
 ## 명령어
 
-게임 내에서 `/pillagehelp [페이지]` (별칭 `/phelp`, `/도움말`, 총 6페이지) 를 치면 아래 내용이 그대로 출력됩니다. 바닐라 `/help`도 완전히 같은 내용을 보여주도록 덮어씌워져 있습니다.
+게임 내에서 `/pillagehelp [페이지]` (별칭 `/phelp`, `/도움말`, 총 8페이지) 를 치면 아래 내용이 그대로 출력됩니다. 바닐라 `/help`도 완전히 같은 내용을 보여주도록 덮어씌워져 있습니다.
 
 ### GUI
 
@@ -133,6 +133,29 @@
 - **술래잡기**: 한 명이 무작위로 첫 술래로 시작해 다른 참가자를 건드리면 그 사람도 술래가 됩니다(잡히면 술래 합류). 2분 안에 잡히지 않고 살아남은 도망자가 승리, 전원이 술래가 되면 술래 팀 승리.
 
 참가하면 최소 인원(스플레프/TNT런/술래잡기 2명, 파쿠르 1명)이 모일 때까지 대기하고, 모이면 10초 카운트다운 후 자동으로 시작합니다. 참가 시 현재 인벤토리·장비·위치는 그대로 저장해뒀다가 라운드가 끝나거나 `/minigame leave`로 나가면 정확히 복원됩니다. 게임 중에는 실제 데미지(추락사 포함)를 받지 않으며, 승리/완주 시 에메랄드 보상이 지급됩니다.
+
+### 보스몹 / 점프맵 / 엔드대전
+
+세 가지 모두 각자 완전히 별개인 전용 월드(`pillage_boss`, `pillage_jump`, `pillage_endwar`)에서 진행되며, 서로 연결되어 있지 않습니다.
+
+| 명령어 | 설명 |
+|---|---|
+| `/boss` | 보스 전용 월드로 이동 |
+| `/boss info` | 보스 체력/누적 처치 횟수 확인 |
+| `/boss spawn` (관리자) | 보스가 없을 때 즉시 강제 소환 |
+| `/boss reset confirm` (관리자) | 처치 기록과 체력 스케일링을 기본값으로 초기화 후 재소환 (되돌릴 수 없음) |
+| `/boss reward add\|clear\|list` (관리자) | 처치 보상 아이템 관리. `add`는 손에 든 아이템을 그대로 보상 목록에 등록 |
+| `/jump start\|leave\|top` | 점프맵 시작/중도 나가기/기록 순위 |
+| `/endwar join\|leave\|info` | 엔드대전 참가 신청/취소/현황 확인 |
+| `/endwar start confirm` (관리자) | 지금 신청된 인원으로 즉시 시작 (정기 일정과 별개) |
+| `/endwar cancel` (관리자) | 진행 중이면 취소하고 원상복구, 대기 중이면 신청 명단 초기화 |
+| `/endwar schedule <일(1-28)> <시(0-23)>` (관리자) | 매달 정기 시작 일정 설정 |
+
+**최강 보스몹 "약탈의 군주"**: 항상 대기 중인 최강 보스몹으로, 체력이 기본 10,000이며 이 체력은 바닐라 체력 속성이 아니라 플러그인이 별도로 관리하는 수치라 상한 없이 계속 키울 수 있습니다. **처치할 때마다 다음에 등장할 개체의 체력이 영구적으로(기본 +2,000씩) 올라갑니다** — 서버가 오래될수록 점점 더 강해집니다. 화염구 발사, 소환수 호출, 강타(내려찍기), 독구름, 순간이동 강타, 벼락 소환, 중력장(끌어당기기), 화염 장판, 광역 충격파, 실명·둔화 저주까지 총 10가지 공격 패턴을 몇 초 간격으로 무작위로 사용합니다. 처치에 실제로 데미지를 입혀 기여한 전원에게 관리자가 `/boss reward add`로 등록해둔 보상 아이템 중 하나가 무작위로 지급되며(등록된 게 없으면 아무것도 안 나가니 반드시 미리 등록해두어야 합니다), 일정 시간(기본 10분) 뒤 더 강해진 채로 다시 등장합니다.
+
+**점프맵**: 체크포인트가 있는 긴 점프 코스를 혼자 도전하는 콘텐츠로, 실시간으로 경쟁하는 파쿠르 레이스 미니게임과는 별개입니다. 떨어지면 처음부터가 아니라 **마지막으로 지나간 체크포인트**로 돌아갑니다. 완주하면 기록이 저장되고, 개인 최고 기록을 경신하면 별도로 알려줍니다. `/jump top`으로 전체 서버 상위 10명의 기록을 볼 수 있습니다.
+
+**엔드대전**: 관리자가 `/endwar schedule`로 예약해두면 매달 지정한 날짜·시각에 자동으로 열리는 대규모 팀 전투 이벤트입니다(엔드풍으로 꾸며진 전용 아레나, 실제 엔드 차원은 아님). 아무 때나 `/endwar join`으로 미리 신청해둘 수 있고, 시작되면 신청자들이 **소속 팀별로**(팀이 없으면 개인 단위로) 나뉘어 한꺼번에 전투 아레나로 이동합니다. 서로 다른 팀(또는 팀 없는 개인)이 2팀 이상 모여야 시작되며, 인원이 부족하면 그 회차는 자동으로 취소됩니다. 참가자는 원래 장비 대신 지급되는 전투 키트(철 장비+검+활)로 싸우며, 죽으면 아이템을 잃지 않고 관전자로 전환되고, 아레나 밖으로 떨어져도 같은 방식으로 탈락 처리됩니다. 한 팀만 생존자가 남으면 즉시 종료되어 그 팀 생존자 전원에게 에메랄드 보상이 지급되고, 모든 참가자의 원래 인벤토리·위치가 그대로 복원됩니다. `/endwar start confirm`으로 관리자가 예약과 무관하게 즉시 시작할 수도 있습니다.
 
 ### 후원자
 
@@ -250,11 +273,11 @@
 | `pillage.team.*` | true | 팀 명령어 |
 | `pillage.tp.*` | true | TP 명령어 |
 | `pillage.trade.*` | true | 거래 명령어 |
-| `pillage.admin` | op | 안티치트 경고 수신, 관리자 명령어(`/staff`, `/inspect`, `/logs`, `/pillageban`, `/eventbox give`, `/shop add\|remove\|list`, `/donor add\|remove\|list`, `/homeadmin`, `/backup`, `/restart`, `/main reset`, `/modclient`, `/announce`, `/mini admin`, `/hub delete`), 인원수 제한 우회 등 |
+| `pillage.admin` | op | 안티치트 경고 수신, 관리자 명령어(`/staff`, `/inspect`, `/logs`, `/pillageban`, `/eventbox give`, `/shop add\|remove\|list`, `/donor add\|remove\|list`, `/homeadmin`, `/backup`, `/restart`, `/main reset`, `/modclient`, `/announce`, `/mini admin`, `/hub delete`, `/boss spawn\|reset\|reward`, `/endwar start\|cancel\|schedule`), 인원수 제한 우회 등 |
 
 ## 주요 설정 (config.yml)
 
-`database`, `announce`, `team`, `tp`, `combat`, `raid`, `hub`, `anti-mod-client`, `spawn`, `anticheat`, `reward`, `chat` 섹션으로 나뉘어 있으며 각 값에 한글 주석이 달려 있습니다. 특히:
+`database`, `announce`, `boss`, `endwar`, `team`, `tp`, `combat`, `raid`, `hub`, `anti-mod-client`, `spawn`, `anticheat`, `reward`, `chat` 섹션으로 나뉘어 있으며 각 값에 한글 주석이 달려 있습니다. 특히:
 
 - `hub.enabled` (기본 `true`): `false`로 바꾸면 허브(로비) 월드를 아예 만들지 않는 버전으로 운영됩니다 (자세한 내용은 위 "허브 없이 운영하기" 참고)
 - `anti-mod-client.enabled` (기본 `true`): 모드 클라이언트(Forge/Fabric/NeoForge 등) 접속 자동 차단 on/off, `blocked-keywords`로 차단 대상 추가/제거
@@ -263,6 +286,8 @@
 - `anticheat.punish.enabled`: 기본 `false` (경고만). 자동 킥을 원하면 `true`로 변경
 - `anticheat.*.enabled`: 검사별로 개별 on/off 가능
 - `chat.profanity-filter-enabled` (기본 `true`) / `chat.banned-words`: 욕설 필터 on/off와 단어 목록
+- `boss.base-health` / `boss.health-increase-per-kill` / `boss.respawn-minutes`: 보스 기본 체력 / 처치당 체력 증가량 / 재등장까지 걸리는 시간(분)
+- `endwar.enabled` / `endwar.day-of-month` / `endwar.hour`: 정기 엔드대전 자동 시작 여부와 매달 시작 일정 (`/endwar schedule`로도 설정 가능)
 
 > **DB 유실 이슈 (해결됨)**: SQLite가 WAL 저널 모드를 쓰고 있었는데, 이 플러그인의 모든 쓰기는 이미 건마다 개별 자동커밋되기 때문에 WAL을 쓸 성능상 이유가 없었고, 오히려 호스팅사가 프로세스를 강제 종료하거나(정상적인 `onDisable()`을 못 거치는 경우) 백업/복원이 `.db` 파일만 챙기고 별도의 `-wal` 저널 파일을 챙기지 않으면 아직 체크포인트되지 않은 데이터가 재가동 시 사라질 수 있었습니다. `DELETE` 저널 모드로 전환해 모든 쓰기가 커밋 즉시 별도 파일 없이 본 파일에 바로 반영되도록 고쳤습니다(실제로 서버를 두 번 재기동해서 값이 살아남는지 검증함). 서버 시작 시 콘솔에 `[DB] <경로> exists=... size=...` 로그가 항상 찍히니, 이후에도 비슷한 증상이 있으면 이 로그로 바로 확인할 수 있습니다.
 
@@ -271,10 +296,10 @@
 두 종류의 DB로 나뉩니다:
 
 - **게임플레이 DB** (인스턴스마다 완전히 별도 파일 — `pillage.db`(전체 서버), `hub.db`(허브), 미니서버마다 `instance-<id>.db`): `teams`, `team_members`, `homes`, `last_locations`, `trade_log`, `kill_log`, `tp_log`, `player_stats`, `death_locations`, `daily_rewards`, `playtime_rewards`, `economy`, `shop_offers`, `player_inventory`(인스턴스별 인벤토리 스냅샷), `player_position`(인스턴스별 마지막 위치), `player_vitals`(인스턴스별 체력·배고픔 스냅샷), `player_effects`(인스턴스별 물약 효과 스냅샷), `player_enderchest`(인스턴스별 엔더상자 스냅샷), `player_xp`(인스턴스별 경험치 스냅샷), `player_gamemode`(인스턴스별 게임모드 스냅샷), `home_settings`(인스턴스별 홈 기능 on/off). 미니서버를 만들면 이 테이블들이 전부 빈 상태인 새 파일로 시작합니다.
-- **글로벌 DB** (`global.db` 하나, 모든 인스턴스가 공유): `donors`, `donor_pets`, `hall_of_fame`, `hall_of_fame_meta`, `ban_log`, `report_log`, `instances`(미니서버 목록), `player_last_instance`(플레이어별 마지막 접속 서버), `event_box_claims`(플레이어별 미수령 이벤트 상자 개수), `event_box_opens`(플레이어별 누적 개봉 횟수, 5개마다 확정 OP 판정용). 후원자 등급이나 차단 기록처럼 인스턴스를 넘나들어도 유지되어야 하는 데이터입니다.
+- **글로벌 DB** (`global.db` 하나, 모든 인스턴스가 공유): `donors`, `donor_pets`, `hall_of_fame`, `hall_of_fame_meta`, `ban_log`, `report_log`, `instances`(미니서버 목록), `player_last_instance`(플레이어별 마지막 접속 서버), `event_box_claims`(플레이어별 미수령 이벤트 상자 개수), `event_box_opens`(플레이어별 누적 개봉 횟수, 5개마다 확정 OP 판정용), `boss_state`(보스 누적 처치/현재 체력 스케일), `boss_rewards`(보스 처치 보상 아이템 목록), `jump_records`(점프맵 개인 최고 기록). 후원자 등급이나 차단 기록처럼 인스턴스를 넘나들어도 유지되어야 하는 데이터입니다. 보스몹/점프맵/엔드대전은 전용 월드가 인스턴스 시스템 바깥에 있어 이 데이터도 전부 글로벌 DB에 저장됩니다.
 
 ## 구현 현황
 
-**전부 완료** — 최초 기획서(팀/TP/거래/약탈/전투/안티치트/랜드(의도적으로 없음)/PvP/GUI/통계/서버관리/QoL/보상/경제/채팅) 16개 대분류에 더해, 비행/전투 중 텔레포트 차단, 인챈트 3~4개짜리 OP 아이템 랜덤박스, 후원자 등급(닉네임 그라데이션/배지/이름표 색상/입퇴장 연출/파티클/폭죽/동상/고양이 펫/PvP 중 위장/명예의 전당), 친구들끼리 자유롭게 만들고 완전히 독립된 데이터로 노는 미니서버 시스템(허브/전체 서버/미니서버 선택, 마지막 접속 서버 자동 복귀)까지 모두 구현했습니다.
+**전부 완료** — 최초 기획서(팀/TP/거래/약탈/전투/안티치트/랜드(의도적으로 없음)/PvP/GUI/통계/서버관리/QoL/보상/경제/채팅) 16개 대분류에 더해, 비행/전투 중 텔레포트 차단, 인챈트 3~4개짜리 OP 아이템 랜덤박스, 후원자 등급(닉네임 그라데이션/배지/이름표 색상/입퇴장 연출/파티클/폭죽/동상/고양이 펫/PvP 중 위장/명예의 전당), 친구들끼리 자유롭게 만들고 완전히 독립된 데이터로 노는 미니서버 시스템(허브/전체 서버/미니서버 선택, 마지막 접속 서버 자동 복귀), 미니게임 4종(스플레프/TNT런/파쿠르/술래잡기), 체력 스케일링형 최강 보스몹, 체크포인트 점프맵, 매달 정기 대규모 팀 전투(엔드대전)까지 모두 구현했습니다.
 
 의도적으로 제외한 것: **랜드 기능**(레이드 서버 특성상 팀 홈만 존재하도록 기획에 명시됨), **자동 재접속**(서버 플러그인이 구현할 수 없는 클라이언트 기능), **후원 결제 연동**(실제 결제는 운영자가 처리하고 `/donor add`로 수동 등록하는 방식으로 구현).
