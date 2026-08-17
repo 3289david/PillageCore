@@ -6,15 +6,27 @@ import com.mingyu.pillage.util.Msg;
 import net.kyori.adventure.bossbar.BossBar;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
+import org.bukkit.Color;
+import org.bukkit.DyeColor;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
+import org.bukkit.Material;
+import org.bukkit.Particle;
 import org.bukkit.World;
 import org.bukkit.attribute.Attribute;
+import org.bukkit.block.banner.Pattern;
+import org.bukkit.block.banner.PatternType;
 import org.bukkit.entity.LivingEntity;
+import org.bukkit.entity.Pillager;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Ravager;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.BannerMeta;
+import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.scoreboard.Scoreboard;
+import org.bukkit.scoreboard.Team;
 import org.bukkit.util.Vector;
 
 import java.util.ArrayList;
@@ -33,6 +45,9 @@ import java.util.concurrent.ThreadLocalRandom;
 public final class BossManager {
 
     static final String BOSS_NAME = "약탈의 군주";
+    private static final String RIDER_NAME = "약탈 대장";
+    private static final String GLOW_TEAM_NAME = "pillage_boss_glow";
+    private static final double SCALE = 2.2;
 
     private final JavaPlugin plugin;
     private final BossDao bossDao;
@@ -44,10 +59,12 @@ public final class BossManager {
 
     private World world;
     private LivingEntity currentBoss;
+    private UUID riderId;
     private long currentMaxHealth;
     private double currentHealth;
     private int killCount;
     private long defeatedAtMillis = 0;
+    private double auraAngle = 0;
     private final Map<UUID, Double> damageContribution = new HashMap<>();
     private final Set<UUID> summonedAdds = new HashSet<>();
 
@@ -68,6 +85,7 @@ public final class BossManager {
     public void start() {
         world = BossWorld.ensureWorld();
         Bukkit.getScheduler().runTaskTimer(plugin, this::tickBossBar, 20L, 20L);
+        Bukkit.getScheduler().runTaskTimer(plugin, this::tickAura, 5L, 5L);
         long attackIntervalTicks = attackIntervalSeconds * 20L;
         Bukkit.getScheduler().runTaskTimer(plugin, this::tickAttacks, attackIntervalTicks, attackIntervalTicks);
         spawn();
@@ -124,15 +142,73 @@ public final class BossManager {
         ravager.customName(Msg.of("&4&l" + BOSS_NAME));
         ravager.setCustomNameVisible(true);
         ravager.setGlowing(true);
+        applyGlowColor(ravager);
         try {
             var scale = ravager.getAttribute(Attribute.SCALE);
-            if (scale != null) scale.setBaseValue(1.8);
+            if (scale != null) scale.setBaseValue(SCALE);
         } catch (Exception ignored) {
         }
         currentBoss = ravager;
 
+        // Ravagers have no equipment render points of their own, so a mounted illager "raid
+        // captain" holding a banner - the same trick vanilla raids use - is the one fully
+        // vanilla-compatible way to visually set this apart from an ordinary Ravager.
+        Pillager rider = world.spawn(spawnLoc, Pillager.class);
+        rider.setPersistent(true);
+        rider.setRemoveWhenFarAway(false);
+        rider.setAI(false);
+        rider.setInvulnerable(true);
+        rider.setSilent(true);
+        rider.setCollidable(false);
+        rider.customName(Msg.of("&c&l" + RIDER_NAME));
+        rider.setCustomNameVisible(true);
+        rider.setGlowing(true);
+        applyGlowColor(rider);
+        var equipment = rider.getEquipment();
+        if (equipment != null) {
+            equipment.setItemInMainHand(buildWarBanner());
+            equipment.setItemInMainHandDropChance(0f);
+        }
+        ravager.addPassenger(rider);
+        riderId = rider.getUniqueId();
+
         Bukkit.broadcast(Msg.of("&4&l⚔ " + BOSS_NAME + " &f&l이(가) 보스 월드에 등장했습니다! &7체력 " + currentMaxHealth
                 + " &f- &7/boss &f명령어로 이동하세요."));
+    }
+
+    private ItemStack buildWarBanner() {
+        ItemStack banner = new ItemStack(Material.BLACK_BANNER);
+        ItemMeta meta = banner.getItemMeta();
+        meta.displayName(Msg.of("&4&l약탈의 깃발"));
+        if (meta instanceof BannerMeta bannerMeta) {
+            try {
+                bannerMeta.addPattern(new Pattern(DyeColor.RED, PatternType.BORDER));
+                bannerMeta.addPattern(new Pattern(DyeColor.RED, PatternType.SKULL));
+            } catch (Exception ignored) {
+            }
+        }
+        banner.setItemMeta(meta);
+        return banner;
+    }
+
+    private void applyGlowColor(LivingEntity entity) {
+        Scoreboard scoreboard = Bukkit.getScoreboardManager().getMainScoreboard();
+        Team team = scoreboard.getTeam(GLOW_TEAM_NAME);
+        if (team == null) {
+            team = scoreboard.registerNewTeam(GLOW_TEAM_NAME);
+            team.setColor(ChatColor.DARK_RED);
+        }
+        String entry = entity.getUniqueId().toString();
+        if (!team.hasEntry(entry)) {
+            team.addEntry(entry);
+        }
+    }
+
+    private void removeRider() {
+        if (riderId == null) return;
+        var entity = Bukkit.getEntity(riderId);
+        if (entity != null) entity.remove();
+        riderId = null;
     }
 
     void trackAdd(UUID uuid) {
@@ -181,6 +257,7 @@ public final class BossManager {
         Bukkit.broadcast(Msg.of("&4&l" + BOSS_NAME + " &f&l이(가) 쓰러졌습니다! &7(누적 처치 " + killCount + "회, 다음 체력 " + nextMax + ")"));
 
         despawnAdds();
+        removeRider();
         if (currentBoss != null) currentBoss.remove();
         currentBoss = null;
         currentHealth = 0;
@@ -200,6 +277,7 @@ public final class BossManager {
     /** /boss reset confirm - wipes scaling back to the base tier and force-respawns. */
     public void forceReset() {
         despawnAdds();
+        removeRider();
         if (currentBoss != null) currentBoss.remove();
         currentBoss = null;
         killCount = 0;
@@ -257,6 +335,24 @@ public final class BossManager {
         if (nearby.isEmpty()) return;
         int idx = ThreadLocalRandom.current().nextInt(BossAttacks.COUNT);
         BossAttacks.execute(idx, this, currentBoss, nearby);
+    }
+
+    /** Rotating ring of red dust particles at the boss's feet plus rising flame wisps - a
+     *  constant "dark power" aura, entirely vanilla particles, no resource pack needed. */
+    private void tickAura() {
+        if (!isAlive()) return;
+        Location center = currentBoss.getLocation();
+        Particle.DustOptions dust = new Particle.DustOptions(Color.fromRGB(200, 20, 20), 1.6f);
+        int points = 10;
+        double radius = 1.6 * SCALE;
+        for (int i = 0; i < points; i++) {
+            double angle = auraAngle + (2 * Math.PI * i / points);
+            double x = center.getX() + Math.cos(angle) * radius;
+            double z = center.getZ() + Math.sin(angle) * radius;
+            world.spawnParticle(Particle.DUST, x, center.getY() + 0.1, z, 1, 0, 0, 0, 0, dust);
+        }
+        world.spawnParticle(Particle.FLAME, center.getX(), center.getY() + SCALE, center.getZ(), 3, 0.6, 0.8, 0.6, 0.01);
+        auraAngle += 0.35;
     }
 
     private void tickBossBar() {
