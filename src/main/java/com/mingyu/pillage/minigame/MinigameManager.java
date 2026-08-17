@@ -37,8 +37,9 @@ public final class MinigameManager {
     private final com.mingyu.pillage.economy.EconomyManager economyManager;
     private final Map<MinigameType, MinigameSession> sessions = new EnumMap<>(MinigameType.class);
     private World world;
-    /** Counts tick() calls (every 10 ticks / 0.5s) since the last spleef floor refill. */
+    /** Counts tick() calls (every 10 ticks / 0.5s) since the last spleef/TNT run floor refill. */
     private int spleefRefillTicks = 0;
+    private int tntRunRefillTicks = 0;
 
     public MinigameManager(JavaPlugin plugin, com.mingyu.pillage.economy.EconomyManager economyManager) {
         this.plugin = plugin;
@@ -72,6 +73,13 @@ public final class MinigameManager {
     // participants still get damage protection), so this also has to check the phase.
     public boolean isPlayingSpleef(UUID uuid) {
         MinigameSession session = sessions.get(MinigameType.SPLEEF);
+        return session.phase == MinigameSession.Phase.PLAYING && session.isPlaying(uuid);
+    }
+
+    /** Same reasoning as {@link #isPlayingSpleef} - the under-feet block removal must only start
+     *  once the TNT run round has actually started. */
+    public boolean isPlayingTntRun(UUID uuid) {
+        MinigameSession session = sessions.get(MinigameType.TNT_RUN);
         return session.phase == MinigameSession.Phase.PLAYING && session.isPlaying(uuid);
     }
 
@@ -254,6 +262,7 @@ public final class MinigameManager {
 
     private void startTntRun(MinigameSession session, List<UUID> order) {
         MinigameArenas.buildTntRunFloorFresh(world);
+        tntRunRefillTicks = 0;
         placeAroundEdge(order, MinigameArenas.TNT_RUN_ORIGIN.toLocation(world), MinigameArenas.TNT_RUN_ARENA_SIZE);
     }
 
@@ -368,6 +377,11 @@ public final class MinigameManager {
                 }
             }
             case TNT_RUN -> {
+                tntRunRefillTicks++;
+                if (tntRunRefillTicks >= SPLEEF_REFILL_INTERVAL_TICKS) {
+                    tntRunRefillTicks = 0;
+                    MinigameArenas.buildTntRunFloorFresh(world);
+                }
                 if (session.participants.size() <= 1) {
                     endRound(session, session.participants.isEmpty() ? null : session.participants.iterator().next());
                 }

@@ -64,9 +64,11 @@ public final class MinigameListener implements Listener {
 
         manager.onParticipantMove(player);
 
-        // TNT run: whatever solid block the player is standing on disappears shortly after.
+        // TNT run: whatever solid block the player is standing on disappears shortly after -
+        // only once the round has actually started, same reasoning as the spleef snow-break gate.
         Block under = player.getLocation().clone().subtract(0, 1, 0).getBlock();
-        if (under.getType() == Material.STONE_BRICKS && pendingTntRunRemoval.add(under)) {
+        if (under.getType() == Material.STONE_BRICKS && manager.isPlayingTntRun(player.getUniqueId())
+                && pendingTntRunRemoval.add(under)) {
             Bukkit.getScheduler().runTaskLater(plugin, () -> {
                 if (under.getType() == Material.STONE_BRICKS) {
                     under.setType(Material.AIR);
