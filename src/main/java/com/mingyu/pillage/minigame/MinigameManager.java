@@ -37,6 +37,8 @@ public final class MinigameManager {
     private final com.mingyu.pillage.economy.EconomyManager economyManager;
     private final Map<MinigameType, MinigameSession> sessions = new EnumMap<>(MinigameType.class);
     private World world;
+    /** Counts tick() calls (every 10 ticks / 0.5s) since the last spleef floor refill. */
+    private int spleefRefillTicks = 0;
 
     public MinigameManager(JavaPlugin plugin, com.mingyu.pillage.economy.EconomyManager economyManager) {
         this.plugin = plugin;
@@ -65,8 +67,12 @@ public final class MinigameManager {
         return null;
     }
 
+    // Snow should only be breakable once the round has actually started - MinigameSession.isPlaying()
+    // only means "currently joined" (true during WAITING/COUNTDOWN too, on purpose, so waiting
+    // participants still get damage protection), so this also has to check the phase.
     public boolean isPlayingSpleef(UUID uuid) {
-        return sessions.get(MinigameType.SPLEEF).isPlaying(uuid);
+        MinigameSession session = sessions.get(MinigameType.SPLEEF);
+        return session.phase == MinigameSession.Phase.PLAYING && session.isPlaying(uuid);
     }
 
     /** Dispatches to whichever per-type movement check applies to this player right now (spleef/
@@ -242,6 +248,7 @@ public final class MinigameManager {
 
     private void startSpleef(MinigameSession session, List<UUID> order) {
         MinigameArenas.buildSpleefFloorFresh(world);
+        spleefRefillTicks = 0;
         placeAroundEdge(order, MinigameArenas.SPLEEF_ORIGIN.toLocation(world), MinigameArenas.SPLEEF_ARENA_SIZE);
     }
 
@@ -346,9 +353,21 @@ public final class MinigameManager {
         }
     }
 
+    private static final int SPLEEF_REFILL_INTERVAL_TICKS = 20; // 20 * 0.5s tick() calls = 10s
+
     private void tickPlaying(MinigameSession session) {
         switch (session.type) {
-            case SPLEEF, TNT_RUN -> {
+            case SPLEEF -> {
+                spleefRefillTicks++;
+                if (spleefRefillTicks >= SPLEEF_REFILL_INTERVAL_TICKS) {
+                    spleefRefillTicks = 0;
+                    MinigameArenas.buildSpleefFloorFresh(world);
+                }
+                if (session.participants.size() <= 1) {
+                    endRound(session, session.participants.isEmpty() ? null : session.participants.iterator().next());
+                }
+            }
+            case TNT_RUN -> {
                 if (session.participants.size() <= 1) {
                     endRound(session, session.participants.isEmpty() ? null : session.participants.iterator().next());
                 }

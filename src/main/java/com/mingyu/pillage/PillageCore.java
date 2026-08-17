@@ -329,7 +329,7 @@ public final class PillageCore extends JavaPlugin {
         BossCommand bossCommand = new BossCommand(bossManager, bossRewardDao, tpManager);
         getCommand("boss").setExecutor(bossCommand);
         getCommand("boss").setTabCompleter(bossCommand);
-        getServer().getPluginManager().registerEvents(new BossListener(bossManager), this);
+        getServer().getPluginManager().registerEvents(new BossListener(bossManager, instanceManager), this);
 
         JumpManager jumpManager = new JumpManager(this, jumpRecordDao);
         jumpManager.start();
